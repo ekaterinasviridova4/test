@@ -4,6 +4,7 @@ HOME="/home/esvirido"
 PROJECT_DIR="$HOME/test"
 EMAIL="ekaterina.sviridova@inria.fr"
 LOGDIR="$HOME/logs"
+export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 
 # Make sure the log directory exists
 mkdir -p "$LOGDIR"
@@ -23,7 +24,10 @@ OAR_OUT=$(oarsub \
     --property="gpu_compute_capability>='$P_MINCUDACAPABILITY' and gpu_mem>='$P_MINGPUMEMORY'" \
     --l "nodes=1/gpu=$L_NGPUS,walltime=$W_HOURS" \
     --notify "[ERROR,INFO]mail:$EMAIL" \
-    "module load conda; source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; python3 mistral_zero_binary.py --limit 10" \
+    "export HUGGINGFACE_HUB_TOKEN=$HUGGINGFACE_HUB_TOKEN; \
+     module load conda; \
+     source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
+     python3 mistral_zero_binary.py --limit 10" \
 )
     #--stdout=logs/%jobid%.stdout \
     #--stderr=logs/%jobid%.stderr \
