@@ -1,4 +1,4 @@
-NAME="sb unique"
+NAME="mistral_zero_binary"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/test"
@@ -8,7 +8,7 @@ EMAIL="ekaterina.sviridova@inria.fr"
 # Mind that asking for more time than you need may make your job wait longer in
 # the queue. It doesn't affect your karma (only the resources that you actually
 # use do that).
-W_HOURS=70
+W_HOURS=5
 # For multi-GPU jobs, some stuff has to be adapted. E.g., you need to specify
 # that you want the GPUs to be on the same node. Check the FAQ for more details.
 L_NGPUS=2
@@ -20,7 +20,7 @@ L_NGPUS=2
 P_MINCUDACAPABILITY=7
 # Minimum GPU memory (in MB)``
 # 11 GB was also chosen to include the GTX 1080 Ti (it has 11 GB = 11264 MB)
-P_MINGPUMEMORY=80000
+P_MINGPUMEMORY=11000
 
 # Now we create a variable containing a huge string containing the command to be
 # executed in the cluster It consists of the ⁠ oarsub ⁠ command followed by a
@@ -39,9 +39,9 @@ OAR_OUT=$(oarsub \
     --stdout=logs/%jobid%.stdout \
     --stderr=logs/%jobid%.stderr \
     --property="gpu_compute_capability>='$P_MINCUDACAPABILITY' and gpu_mem>='$P_MINGPUMEMORY'" \
-    -l "nodes=1/gpu=2,walltime=$W_HOURS \
+    --l "nodes=1/gpu=$L_NGPUS,walltime=$W_HOURS" \
     --notify "[ERROR,INFO]mail:$EMAIL" \
-   python3 mistral_zero_binary.py" \
+    "module load conda; conda activate llm_env; python3 mistral_zero_binary.py" \
 )
 
 # Run the string contained in ⁠ OAR_OUT ⁠ as a command. I don't remember why I did
