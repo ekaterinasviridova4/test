@@ -12,6 +12,7 @@ from tqdm import tqdm
 from difflib import SequenceMatcher
 from sklearn.metrics import classification_report
 import nltk
+nltk.data.path.append("/home/esvirido/nltk_data")
 from nltk.tokenize import word_tokenize, sent_tokenize
 
 from transformers import (
@@ -21,7 +22,7 @@ from transformers import (
 import logging
 from datetime import datetime
 
-nltk.download("punkt")
+nltk.download("punkt_tab")
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +39,9 @@ def parse_args():
     parser.add_argument('--output_dir', type=str,
                        default='results',
                        help='Directory to save the results')
+    parser.add_argument('--limit', type=int, #to limit the number of examples for testing
+                        default=None,
+                        help='Limit number of examples for testing')
     return parser.parse_args()
 
 def parse_conll_file(conll_file_path):
@@ -130,7 +134,7 @@ def setup_model():
     return pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=1024, do_sample=False)
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to analyze the following sentence and determine whether it is *Implicit* or *Explicit* neither.
+     prompt = f"""Your task is to analyze the following sentence and determine whether it is *Implicit* or *Explicit*.
 Explicit refers to transparent and clearly understandable content.
 Implicit refers to hidden meanings or assumptions that are unclear from the given text alone.
 
@@ -236,6 +240,9 @@ def main():
     validate_file(args.data_path)
     data = parse_conll_file(args.data_path)
     df = process_data(data)
+    if args.limit:
+        df = df.head(args.limit)
+        logging.info(f"Limiting to first {args.limit} examples for testing.")
     pipe = setup_model()
 
     predictions = []

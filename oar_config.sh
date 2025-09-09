@@ -23,7 +23,7 @@ OAR_OUT=$(oarsub \
     --property="gpu_compute_capability>='$P_MINCUDACAPABILITY' and gpu_mem>='$P_MINGPUMEMORY'" \
     --l "nodes=1/gpu=$L_NGPUS,walltime=$W_HOURS" \
     --notify "[ERROR,INFO]mail:$EMAIL" \
-    "module load conda; conda activate llm_env; python3 mistral_zero_binary.py" \
+    "module load conda; conda activate llm_env; python3 mistral_zero_binary.py --limit 10" \
 )
     #--stdout=logs/%jobid%.stdout \
     #--stderr=logs/%jobid%.stderr \
