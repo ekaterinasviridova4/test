@@ -15,11 +15,12 @@ import nltk
 nltk.data.path.append("/home/esvirido/nltk_data")
 from nltk.tokenize import word_tokenize, sent_tokenize
 from huggingface_hub import login
-
 from transformers import (
-    AutoTokenizer, AutoModelForCausalLM,
+    Mistral3ForConditionalGeneration,
     BitsAndBytesConfig, pipeline
 )
+from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
+
 import logging
 from datetime import datetime
 
@@ -141,8 +142,8 @@ def setup_model():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype="float16"
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_id, token=True)
-    model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", quantization_config=bnb_config, token=True)
+    tokenizer = MistralTokenizer.from_hf_hub(model_id, token=True)
+    model = Mistral3ForConditionalGeneration.from_pretrained(model_id, device_map="auto", quantization_config=bnb_config, token=True)
     return pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=1024, do_sample=False)
 
 def build_prompt(sentence):
