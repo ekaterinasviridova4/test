@@ -134,7 +134,7 @@ def process_data(data):
     return pd.DataFrame(records)
 
 def setup_model():
-    model_id = "mistralai/Mistral-7B-Instruct-v0.2"
+    model_id = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
