@@ -6,6 +6,7 @@ Zero-shot classification using Mistral
 import os
 import re
 import json
+import torch
 import argparse
 import pandas as pd
 from tqdm import tqdm
@@ -17,7 +18,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from huggingface_hub import login
 from transformers import (
     Mistral3ForConditionalGeneration,
-    BitsAndBytesConfig, pipeline
+    BitsAndBytesConfig
 )
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 
@@ -140,11 +141,13 @@ def setup_model():
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype="float16"
+        bnb_4bit_compute_dtype=torch.float16
     )
-    tokenizer = MistralTokenizer.from_hf_hub(model_id, token=True)
-    model = Mistral3ForConditionalGeneration.from_pretrained(model_id, device_map="auto", quantization_config=bnb_config, token=True)
-    return pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=1024, do_sample=False)
+    tokenizer = MistralTokenizer.from_hf_hub(model_id)
+    model = Mistral3ForConditionalGeneration.from_pretrained(
+        model_id, device_map="auto", quantization_config=bnb_config
+    )
+    return model, tokenizer
 
 def build_prompt(sentence):
      prompt = f"""Your task is to analyze the following sentence and determine whether it is *Implicit* or *Explicit*.
@@ -253,17 +256,39 @@ def main():
     validate_file(args.data_path)
     data = parse_conll_file(args.data_path)
     df = process_data(data)
+
     if args.limit:
         df = df.head(args.limit)
         logging.info(f"Limiting to first {args.limit} examples for testing.")
-    pipe = setup_model()
+
+    # Load model and tokenizer
+    model, tokenizer = setup_model()
+    model.eval()  # put model in eval mode
 
     predictions = []
     for row in tqdm(df.itertuples(), total=len(df)):
         prompt = build_prompt(row.sentence)
-        output = pipe(prompt)[0]['generated_text']
-        clean = output.replace(prompt, "").strip()
-        predictions.append({"sentence": row.sentence, "gold": row.ner_tag, "mistral_output": clean})
+
+        # Tokenize and move to correct device
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids=inputs["input_ids"],
+                max_new_tokens=1024,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id
+            )
+
+        # Extract generated part only (remove prompt)
+        generated_tokens = outputs[0][inputs["input_ids"].shape[-1]:]
+        clean = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+
+        predictions.append({
+            "sentence": row.sentence,
+            "gold": row.ner_tag,
+            "mistral_output": clean
+        })
 
     save_predictions(predictions, args.output_dir)
     evaluate_predictions(predictions, args.output_dir)
