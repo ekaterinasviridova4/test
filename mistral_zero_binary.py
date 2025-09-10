@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report
 import nltk
 nltk.data.path.append("/home/esvirido/nltk_data")
 from nltk.tokenize import word_tokenize, sent_tokenize
+from huggingface_hub import login
 
 from transformers import (
     AutoTokenizer, AutoModelForCausalLM,
@@ -30,6 +31,17 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+def ensure_huggingface_token():
+    token = os.getenv("HUGGINGFACE_HUB_TOKEN")
+    if not token:
+        raise ValueError("Hugging Face token not found. Please ensure it is set in the environment.")
+    else:
+        logging.info("Hugging Face token found. Logging in...")
+        login(token=token)
+
+# Call this function at the start of the script
+ensure_huggingface_token()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Zero-shot classification using Mistral model')
