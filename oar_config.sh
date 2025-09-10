@@ -11,7 +11,7 @@ mkdir -p "$LOGDIR"
 
 ### Resource settings
 W_HOURS=5                  # Walltime in hours
-L_NGPUS=4                  # Number of GPUs (increased for larger model)
+L_NGPUS=2                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
 P_MINGPUMEMORY=40000       # Minimum GPU memory in MB (40 GB for larger model)
 
