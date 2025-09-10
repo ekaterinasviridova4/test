@@ -270,18 +270,19 @@ def main():
         prompt = build_prompt(row.sentence)
 
         # Tokenize and move to correct device
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        tokenized = tokenizer.encode(prompt)
+        input_ids = torch.tensor([tokenized.tokens], device=model.device)  
 
         with torch.no_grad():
             outputs = model.generate(
-                input_ids=inputs["input_ids"],
+                input_ids=input_ids,
                 max_new_tokens=1024,
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id
-            )
+    )
 
         # Extract generated part only (remove prompt)
-        generated_tokens = outputs[0][inputs["input_ids"].shape[-1]:]
+        generated_tokens = outputs[0][len(tokenized.tokens):]
         clean = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
 
         predictions.append({
