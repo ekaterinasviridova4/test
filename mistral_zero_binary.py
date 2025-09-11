@@ -264,7 +264,7 @@ def main():
     # Load model and tokenizer
     model, tokenizer = setup_model()
     model.eval() 
-    pad_token_id = model.config.pad_token_id or model.config.eos_token_id or tokenizer.token_to_id("</s>")
+    pad_token_id = None 
 
     predictions = []
     for row in tqdm(df.itertuples(), total=len(df)):
@@ -279,8 +279,7 @@ def main():
             outputs = model.generate(
                 input_ids=input_ids,
                 max_new_tokens=1024,
-                do_sample=False,
-                pad_token_id=pad_token_id
+                do_sample=False
     )
 
         generated_tokens = outputs[0][len(tokenized.tokens):]
