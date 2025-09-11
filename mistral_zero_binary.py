@@ -21,6 +21,7 @@ from transformers import (
     BitsAndBytesConfig
 )
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
+from mistral_common.protocol.instruct.request import ChatCompletionRequest
 
 import logging
 from datetime import datetime
@@ -42,11 +43,10 @@ def ensure_huggingface_token():
         logging.info("Hugging Face token found. Logging in...")
         login(token=token)
 
-# Call this function at the start of the script
 ensure_huggingface_token()
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Zero-shot classification using Mistral model')
+    parser = argparse.ArgumentParser(description='Zero-shot classification using Mistral')
     parser.add_argument('--data_path', type=str, 
                        default='pos_neg_imp_exp.conll',
                        help='Path to the input CONLL file')
@@ -186,7 +186,7 @@ def get_sentence_level_labels(text, gold):
 
     # Handle mismatch between tokens and labels
     if len(tokens) != len(labels):
-        logging.warning(f"⚠️ Token-label mismatch: {len(tokens)} tokens vs {len(labels)} labels")
+        logging.warning(f"Token-label mismatch: {len(tokens)} tokens vs {len(labels)} labels")
         if len(tokens) > len(labels):
             # Pad labels with "O" for extra tokens
             labels.extend(["O"] * (len(tokens) - len(labels)))
@@ -263,15 +263,16 @@ def main():
 
     # Load model and tokenizer
     model, tokenizer = setup_model()
-    model.eval()  # put model in eval mode
+    model.eval() 
 
     predictions = []
     for row in tqdm(df.itertuples(), total=len(df)):
         prompt = build_prompt(row.sentence)
 
-        # Tokenize and move to correct device
-        tokenized = tokenizer.encode(prompt)
-        input_ids = torch.tensor([tokenized.tokens], device=model.device)  
+        messages = [{"role": "user", "content": prompt}]
+        chat_request = ChatCompletionRequest(messages=messages)
+        tokenized = tokenizer.encode_chat_completion(chat_request)
+        input_ids = torch.tensor([tokenized.tokens], device=model.device) 
 
         with torch.no_grad():
             outputs = model.generate(
@@ -281,7 +282,6 @@ def main():
                 pad_token_id=tokenizer.eos_token_id
     )
 
-        # Extract generated part only (remove prompt)
         generated_tokens = outputs[0][len(tokenized.tokens):]
         clean = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
 
