@@ -9,7 +9,7 @@ export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 # Make sure the log directory exists
 mkdir -p "$LOGDIR"
 
-### Resource settings
+
 W_HOURS=5                  # Walltime in hours
 L_NGPUS=2                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
