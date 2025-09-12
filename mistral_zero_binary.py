@@ -53,9 +53,9 @@ def parse_args():
     parser.add_argument('--output_dir', type=str,
                        default='results',
                        help='Directory to save the results')
-    parser.add_argument('--limit', type=int, #to limit the number of examples for testing
-                        default=None,
-                        help='Limit number of examples for testing')
+    # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
+    #                     default=None,
+    #                     help='Limit number of examples for testing')
     return parser.parse_args()
 
 def parse_conll_file(conll_file_path):
@@ -257,9 +257,9 @@ def main():
     data = parse_conll_file(args.data_path)
     df = process_data(data)
 
-    if args.limit:
-        df = df.head(args.limit)
-        logging.info(f"Limiting to first {args.limit} examples for testing.")
+    # if args.limit:
+    #     df = df.head(args.limit)
+    #     logging.info(f"Limiting to first {args.limit} examples for testing.")
 
     # Load model and tokenizer
     model, tokenizer = setup_model()
