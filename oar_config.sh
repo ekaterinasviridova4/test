@@ -28,7 +28,7 @@ OAR_OUT=$(oarsub \
      echo \"Hugging Face Token: $HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     python3 mistral_zero_binary.py \
+     python3 mistral_zero_binary.py" \
 )
     #--stdout=logs/%jobid%.stdout \
     #--stderr=logs/%jobid%.stderr \
