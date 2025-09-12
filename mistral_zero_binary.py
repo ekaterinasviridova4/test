@@ -283,7 +283,7 @@ def main():
     )
 
         generated_tokens = outputs[0][len(tokenized.tokens):]
-        clean = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+        clean = tokenizer.decode(generated_tokens).strip()
 
         predictions.append({
             "sentence": row.sentence,
