@@ -25,11 +25,11 @@ OAR_OUT=$(oarsub \
     --l "nodes=1/gpu=$L_NGPUS,walltime=$W_HOURS" \
     --notify "[ERROR,INFO]mail:$EMAIL" \
     "export HUGGINGFACE_HUB_TOKEN=$HUGGINGFACE_HUB_TOKEN; \
-     echo \"Hugging Face Token: $HUGGINGFACE_HUB_TOKEN\"; \
+     echo \"Hugging Face Token: \$HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      echo 'Starting training...'; \
-     python3 mistral_finetune_binary.py --limit 10" \
+     python3 mistral_finetune_binary.py --limit 10; \
      echo 'Training finished. Starting evaluation...'; \
      python3 evaluate_mistral_finetuned_binary.py" \
 )
