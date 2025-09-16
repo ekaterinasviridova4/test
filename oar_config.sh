@@ -31,7 +31,10 @@ OAR_OUT=$(oarsub \
      echo 'Starting training...'; \
      python3 mistral_finetune_binary.py --limit 10; \
      echo 'Training finished. Starting evaluation...'; \
-     python3 evaluate_mistral_finetuned_binary.py" \
+     python3 evaluate_mistral_finetuned_binary.py \
+        --model_path results_finetune_binary \
+        --output_dir results_finetune_binary \
+        --limit 10" \
 )
     #--stdout=logs/%jobid%.stdout \
     #--stderr=logs/%jobid%.stderr \
