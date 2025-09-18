@@ -28,15 +28,14 @@ OAR_OUT=$(oarsub \
      echo \"Hugging Face Token: \$HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     echo 'Preparing data...'; \
-     python3 prepare_data_finetune_binary.py; \s
      echo 'Starting training...'; \
-     python3 mistral_finetune_binary.py --limit 10; \
+     python3 mistral_finetune_binary.py --limit 20; \
      echo 'Training finished. Starting evaluation...'; \
      python3 evaluate_mistral_finetuned_binary.py \
-        --model_path results_finetune_binary \
+        --data_dir out_jsonl \
         --output_dir results_finetune_binary \
-        --limit 10" \
+        --pred_dir results_finetune_binary/predictions \
+        --split test" \
 )
     #--stdout=logs/%jobid%.stdout \
     #--stderr=logs/%jobid%.stderr \

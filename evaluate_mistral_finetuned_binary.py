@@ -2,122 +2,118 @@
 
 import os
 import json
-import torch
 import argparse
-import re
-from tqdm import tqdm
+from datasets import Dataset
 from sklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
-from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
-from datetime import datetime
-import logging
+from transformers import Mistral3ForConditionalGeneration
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral model")
-    parser.add_argument("--model_path", type=str, required=True, help="Path to fine-tuned model")
-    parser.add_argument("--test_file", type=str, default="results_finetune_binary/test.jsonl", help="Path to test JSONL file")
-    parser.add_argument("--output_dir", type=str, default="results_finetune_binary", help="Where to save predictions and report")
-    parser.add_argument("--limit", type=int, default=None, help="Limit number of examples")
-    return parser.parse_args()
-
-def setup_model(model_path):
-    model_id = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
-    tokenizer = MistralTokenizer.from_hf_hub(model_id)
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16
-    )
-    model = Mistral3ForConditionalGeneration.from_pretrained(
-        model_path,
-        device_map="auto",
-        quantization_config=bnb_config
-    )
-    model.eval()
-    return model, tokenizer
-
-def load_jsonl(path):
+def load_jsonl_dataset(path):
+    rows = []
     with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line.strip()) for line in f if line.strip()]
+        for line in f:
+            if not line.strip():
+                continue
+            ex = json.loads(line)
+            rows.append({"input": ex["input"].strip(), "output": ex["output"].strip()})
+    return Dataset.from_list(rows)
 
-def extract_label_from_output(text):
-    """
-    Extracts the first "type": "..." from the model's output.
-    """
-    pattern = r'"type"\s*:\s*"([^"]+)"'
-    match = re.search(pattern, text)
-    if match:
-        return match.group(1).capitalize()
-    return "O"
+def build_prompt(sentence):
+     prompt = f"""Your task is to classify each sentence in the following text as Implicit or Explicit.
+Definitions:
+- Explicit refers to transparent and clearly understandable content.
+- Implicit refers to hidden meanings or assumptions that are unclear from the given text alone.
 
-def evaluate_predictions(predictions, output_dir):
-    gold_labels = [ex["gold"] for ex in predictions]
-    pred_labels = [ex["pred"] for ex in predictions]
+Instructions:
+- Wrap each sentence in either <Implicit> sentence </Implicit> or <Explicit> sentence </Explicit> tags based on the classification.
+- Output only the tagged text, with no explanations or extra formatting.
 
-    report = classification_report(
-        gold_labels,
-        pred_labels,
-        labels=["Implicit", "Explicit", "O"],
-        digits=4
-    )
+Sentence:
+{sentence}
+"""
+     return prompt
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = os.path.join(output_dir, f"classification_report_{timestamp}.txt")
-    with open(output_path, "w") as f:
+def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_tokens=512):
+    os.makedirs(pred_dir, exist_ok=True)
+
+    # Load model + tokenizer
+    tokenizer = MistralTokenizer.from_hf_hub(model_dir)
+    model = Mistral3ForConditionalGeneration.from_pretrained(model_dir, device_map="auto")
+
+    # Load dataset
+    ds = load_jsonl_dataset(os.path.join(data_dir, f"{split}.jsonl"))
+
+    preds, refs = [], []
+    for ex in ds:
+        # Build prompt
+        prompt = build_prompt(ex["input"])
+        messages = [{"role": "user", "content": prompt}]
+        chat_request = ChatCompletionRequest(messages=messages)
+        encoded = tokenizer.encode_chat_completion(chat_request)
+        input_ids = tokenizer.convert_tokens_to_ids(encoded.tokens)
+        input_ids = tokenizer.prepare_for_model(input_ids, return_tensors="pt", max_length=max_length, truncation=True)["input_ids"].to(model.device)
+
+        # Generate
+        outputs = model.generate(
+            input_ids=input_ids,
+            max_new_tokens=max_new_tokens,
+            do_sample=False
+        )
+        pred = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+
+        preds.append(pred)
+        refs.append(ex["output"])
+
+    # Save raw predictions
+    out_path = os.path.join(pred_dir, f"{split}_predictions.jsonl")
+    with open(out_path, "w", encoding="utf-8") as f:
+        for p, r in zip(preds, refs):
+            f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
+    print(f"Saved predictions to {out_path}")
+
+    # Quick classification_report (Implicit vs Explicit at text-level)
+    y_true = ["Implicit" if "<Implicit>" in r else "Explicit" for r in refs]
+    y_pred = ["Implicit" if "<Implicit>" in p else "Explicit" for p in preds]
+
+    report = classification_report(y_true, y_pred, digits=3)
+    with open(os.path.join(pred_dir, f"{split}_report.txt"), "w") as f:
         f.write(report)
     print(report)
-    print(f"Saved report to {output_path}")
 
-    # Also save predictions
-    json_out_path = os.path.join(output_dir, f"predictions_{timestamp}.json")
-    with open(json_out_path, "w") as f:
-        json.dump(predictions, f, indent=2)
-    print(f"Saved raw predictions to {json_out_path}")
+def parse_args():
+    parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on Implicit/Explicit tagging")
+    parser.add_argument('--data_dir', type=str,
+                        default='out_jsonl',
+                        help='Directory with train.jsonl, dev.jsonl, test.jsonl')
+    parser.add_argument('--output_dir', type=str,
+                        default='results_finetune_binary',
+                        help='Directory with the fine-tuned model and logs')
+    parser.add_argument('--pred_dir', type=str,
+                        default='results_finetune_binary',
+                        help='Directory to save predictions and reports')
+    parser.add_argument('--split', type=str,
+                        default='test',
+                        choices=['train', 'dev', 'test'],
+                        help='Which split to evaluate')
+    parser.add_argument('--max_length', type=int,
+                        default=2048,
+                        help='Max input length for evaluation')
+    parser.add_argument('--max_new_tokens', type=int,
+                        default=512,
+                        help='Max number of new tokens to generate')
+    return parser.parse_args()
 
 def main():
     args = parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    print("Loading model...")
-    model, tokenizer = setup_model(args.model_path)
-
-    print("Loading test data...")
-    test_data = load_jsonl(args.test_file)
-    if args.limit:
-        test_data = test_data[:args.limit]
-
-    predictions = []
-    for example in tqdm(test_data):
-        prompt = example["text"]
-        gold = json.loads(example["label"])["type"]
-
-        # Format as chat
-        messages = [{"role": "user", "content": prompt}]
-        chat_request = ChatCompletionRequest(messages=messages)
-        tokenized = tokenizer.encode_chat_completion(chat_request)
-        input_ids = torch.tensor([tokenized.tokens], device=model.device)
-
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=input_ids,
-                max_new_tokens=128,
-                do_sample=False
-            )
-        generated = outputs[0][len(tokenized.tokens):]
-        decoded = tokenizer.decode(generated).strip()
-
-        pred_label = extract_label_from_output(decoded)
-
-        predictions.append({
-            "prompt": prompt,
-            "gold": gold,
-            "pred": pred_label,
-            "output": decoded
-        })
-
-    evaluate_predictions(predictions, args.output_dir)
+    evaluate(
+        model_dir=args.output_dir,
+        data_dir=args.data_dir,
+        split=args.split,
+        pred_dir=args.pred_dir,
+        max_length=args.max_length,
+        max_new_tokens=args.max_new_tokens,
+    )
 
 if __name__ == "__main__":
     main()
