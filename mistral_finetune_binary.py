@@ -88,12 +88,7 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
     prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
     # Assistant part
-    with tokenizer.as_target_tokenizer():
-        target_tokens = tokenizer(
-            example["output"],
-            truncation=True,
-            max_length=max_length
-        )["input_ids"]
+    target_tokens = tokenizer(example["output"], truncation=True, max_length=max_length)["input_ids"]
 
     # Build full input/labels
     full_tokens = prompt_tokens + target_tokens
@@ -101,8 +96,8 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
 
     # Truncate if too long
     if len(full_tokens) > max_length:
-        full_tokens = full_tokens[-max_length:]
-        labels = labels[-max_length:]
+        full_tokens = full_tokens[:max_length]
+        labels = labels[:max_length]
 
     attention_mask = [1] * len(full_tokens)
 
