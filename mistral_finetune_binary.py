@@ -82,30 +82,29 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
     """
     # Build messages
     prompt = build_prompt(example["input"])
-    messages = [
-        {"role": "user", "content": prompt},
-        {"role": "assistant", "content": example["output"]},
-    ]
-
-    # Encode full conversation (user + assistant)
+    # User part
+    messages = [{"role": "user", "content": prompt}]
     chat_request = ChatCompletionRequest(messages=messages)
-    full_tokens = tokenizer.encode_chat_completion(chat_request).tokens
+    prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
-    # Encode only the user part (so we know where prompt ends)
-    user_request = ChatCompletionRequest(messages=[messages[0]])
-    prompt_tokens = tokenizer.encode_chat_completion(user_request).tokens
+    # Assistant part
+    with tokenizer.as_target_tokenizer():
+        target_tokens = tokenizer(
+            example["output"],
+            truncation=True,
+            max_length=max_length
+        )["input_ids"]
+
+    # Build full input/labels
+    full_tokens = prompt_tokens + target_tokens
+    labels = [-100] * len(prompt_tokens) + target_tokens
 
     # Truncate if too long
     if len(full_tokens) > max_length:
         full_tokens = full_tokens[-max_length:]
-        prompt_len = min(len(prompt_tokens), len(full_tokens) - 1)
-    else:
-        prompt_len = len(prompt_tokens)
+        labels = labels[-max_length:]
 
     attention_mask = [1] * len(full_tokens)
-    labels = full_tokens.copy()
-    for i in range(min(prompt_len, len(labels))):
-        labels[i] = -100  # mask prompt tokens
 
     return {
         "input_ids": full_tokens,

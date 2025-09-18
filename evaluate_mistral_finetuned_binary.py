@@ -38,7 +38,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     os.makedirs(pred_dir, exist_ok=True)
 
     # Load model + tokenizer
-    tokenizer = MistralTokenizer.from_hf_hub(model_dir)
+    tokenizer = MistralTokenizer.from_file(os.path.join(model_dir, "tokenizer.model"))
     model = Mistral3ForConditionalGeneration.from_pretrained(model_dir, device_map="auto")
 
     # Load dataset
