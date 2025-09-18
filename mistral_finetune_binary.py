@@ -80,21 +80,22 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
     Build [user prompt + assistant output] as chat input.
     Mask out prompt tokens so loss is only on the output.
     """
-    # Build messages
+    # Build messages (user prompt)
     prompt = build_prompt(example["input"])
-    # User part
     messages = [{"role": "user", "content": prompt}]
     chat_request = ChatCompletionRequest(messages=messages)
     prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
-    # Assistant part
-    target_tokens = tokenizer(example["output"], truncation=True, max_length=max_length)["input_ids"]
+    # Assistant output tokens
+    target_tokens = tokenizer.encode(example["output"]).tokens
+    if len(target_tokens) > max_length:
+        target_tokens = target_tokens[:max_length]
 
-    # Build full input/labels
+    # Build full sequence
     full_tokens = prompt_tokens + target_tokens
     labels = [-100] * len(prompt_tokens) + target_tokens
 
-    # Truncate if too long
+    # Truncate full sequence if needed
     if len(full_tokens) > max_length:
         full_tokens = full_tokens[:max_length]
         labels = labels[:max_length]
