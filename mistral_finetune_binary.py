@@ -173,19 +173,31 @@ def main():
     # Setup model and tokenizer
     model, tokenizer = setup_model_with_lora()
 
+    eos_id = tokenizer.instruct_tokenizer.tokenizer.eos_id
+    model.config.pad_token_id = eos_id
+    if hasattr(model, "generation_config"):
+        model.generation_config.pad_token_id = eos_id
+
+    def collate_fn(batch):
+        max_len = max(len(x["input_ids"]) for x in batch)
+        input_ids, attention_mask, labels = [], [], []
+        for x in batch:
+            pad_len = max_len - len(x["input_ids"])
+            input_ids.append(x["input_ids"] + [eos_id] * pad_len)
+            attention_mask.append(x["attention_mask"] + [0] * pad_len)
+            labels.append(x["labels"] + [-100] * pad_len)
+        return {
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+            "labels": torch.tensor(labels, dtype=torch.long),
+        }
+
     # Tokenize datasets
     def _prep(ex):
         return tokenize_supervised(ex, tokenizer, max_length=args.max_length)
 
     train_ds = train_ds.map(_prep, remove_columns=train_ds.column_names)
     dev_ds   = dev_ds.map(_prep, remove_columns=dev_ds.column_names)
-
-    data_collator = DataCollatorForSeq2Seq(
-        tokenizer=tokenizer,
-        model=model,
-        label_pad_token_id=-100,
-        padding=True,
-    )
 
     training_args = TrainingArguments(
         output_dir=args.output_dir,
@@ -212,7 +224,7 @@ def main():
         train_dataset=train_ds,
         eval_dataset=dev_ds,
         tokenizer=tokenizer,
-        data_collator=data_collator,
+        data_collator=collate_fn,
     )
 
     trainer.train()
