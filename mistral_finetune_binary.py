@@ -79,16 +79,20 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
   
     # Build messages (user prompt)
     prompt = build_prompt(example["input"])
-    messages = [{"role": "user", "content": prompt}]
-    chat_request = ChatCompletionRequest(messages=messages)
+    user_messages = [{"role": "user", "content": prompt}]
+    chat_request = ChatCompletionRequest(messages=user_messages)
     prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
     # Assistant output tokens
-    target_tokens = tokenizer.instruct_tokenizer.encode(example["output"])
+    assistant_messages = {"role": "assistant", "content": example["output"]}
+    full_messages = user_messages + [assistant_messages]
+    full_request = ChatCompletionRequest(messages=full_messages, continue_final_message=True)
+    full_tokens = tokenizer.encode_chat_completion(full_request).tokens
 
     # Build full sequence
-    full_tokens = prompt_tokens + target_tokens
-    labels = [-100] * len(prompt_tokens) + target_tokens
+    if len(full_tokens) < len(prompt_tokens):
+        full_tokens = prompt_tokens
+    labels = [-100] * len(prompt_tokens) + full_tokens[len(prompt_tokens):]
 
     # Truncate full sequence if needed
     if len(full_tokens) > max_length:
