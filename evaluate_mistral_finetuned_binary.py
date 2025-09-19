@@ -39,7 +39,7 @@ Sentence:
 def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_tokens=512):
     os.makedirs(pred_dir, exist_ok=True)
 
-    # Base model + tokenizer from HF (tokenizer is unchanged by finetuning)
+    # Load base tokenizer/model + attach LoRA adapters saved in model_dir
     base_id = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
     tokenizer = MistralTokenizer.from_hf_hub(base_id)
 
@@ -47,15 +47,14 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16
+        bnb_4bit_compute_dtype=torch.float16,
     )
     base_model = Mistral3ForConditionalGeneration.from_pretrained(
         base_id, device_map="auto", quantization_config=bnb
     )
-    # Attach LoRA adapters saved in `model_dir`
     model = PeftModel.from_pretrained(base_model, model_dir)
 
-    # Set pad token id for generation
+    # Set PAD (use EOS)
     eos_id = tokenizer.instruct_tokenizer.tokenizer.eos_id
     model.config.pad_token_id = eos_id
     if hasattr(model, "generation_config"):
@@ -66,29 +65,42 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 
     preds, refs = [], []
     for ex in ds:
-        # Build prompt -> token ids
+        # Build prompt -> token ids (already int ids)
         prompt = build_prompt(ex["input"])
-        messages = [{"role": "user", "content": prompt}]
-        chat_request = ChatCompletionRequest(messages=messages)
+        chat_request = ChatCompletionRequest(messages=[{"role": "user", "content": prompt}])
         tokenized = tokenizer.encode_chat_completion(chat_request)
-        ids = tokenized.tokens  # already int token IDs
+        ids = tokenized.tokens
 
         # Truncate input if needed
         if len(ids) > max_length:
             ids = ids[:max_length]
 
         input_ids = torch.tensor([ids], device=model.device)
+        attention_mask = torch.ones_like(input_ids)  # avoid warning & ensure reliable behavior
 
         # Generate
         with torch.no_grad():
             outputs = model.generate(
                 input_ids=input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,
                 pad_token_id=eos_id,
             )
-        # mistral_common decode expects a list[int]
-        pred = tokenizer.decode(outputs[0].tolist(), skip_special_tokens=True).strip()
+
+        # Decode ONLY the newly generated tokens (not the prompt)
+        full = outputs[0].tolist()
+        prompt_len = input_ids.shape[1]
+        gen_only = full[prompt_len:]
+
+        # Trim at first EOS if present
+        try:
+            eos_pos = gen_only.index(eos_id)
+            gen_only = gen_only[:eos_pos]
+        except ValueError:
+            pass  # no EOS in tail
+
+        pred = tokenizer.decode(gen_only).strip()  # no skip_special_tokens kwarg in mistral_common
 
         preds.append(pred)
         refs.append(ex["output"])
@@ -100,7 +112,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
 
-    # Simple text-level report
+    # Simple label-at-text-level report
     y_true = ["Implicit" if "<Implicit>" in r else "Explicit" for r in refs]
     y_pred = ["Implicit" if "<Implicit>" in p else "Explicit" for p in preds]
 
