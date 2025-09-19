@@ -223,13 +223,13 @@ def main():
         args=training_args,
         train_dataset=train_ds,
         eval_dataset=dev_ds,
-        tokenizer=tokenizer,
+        #tokenizer=tokenizer,
         data_collator=collate_fn,
     )
 
     trainer.train()
     trainer.save_model(args.output_dir)
-    tokenizer.save_pretrained(args.output_dir)
+    #tokenizer.save_pretrained(args.output_dir)
 
 
 if __name__ == "__main__":

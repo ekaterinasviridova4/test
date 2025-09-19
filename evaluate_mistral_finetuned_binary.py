@@ -3,11 +3,13 @@
 import os
 import json
 import argparse
+from peft import PeftModel
+import torch
 from datasets import Dataset
 from sklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
-from transformers import Mistral3ForConditionalGeneration
+from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
 
 def load_jsonl_dataset(path):
     rows = []
@@ -37,30 +39,56 @@ Sentence:
 def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_tokens=512):
     os.makedirs(pred_dir, exist_ok=True)
 
-    # Load model + tokenizer
-    tokenizer = MistralTokenizer.from_hf_hub("mistralai/Mistral-Small-3.2-24B-Instruct-2506")
-    model = Mistral3ForConditionalGeneration.from_pretrained(model_dir, device_map="auto")
+    # Base model + tokenizer from HF (tokenizer is unchanged by finetuning)
+    base_id = "mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+    tokenizer = MistralTokenizer.from_hf_hub(base_id)
+
+    bnb = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.float16
+    )
+    base_model = Mistral3ForConditionalGeneration.from_pretrained(
+        base_id, device_map="auto", quantization_config=bnb
+    )
+    # Attach LoRA adapters saved in `model_dir`
+    model = PeftModel.from_pretrained(base_model, model_dir)
+
+    # Set pad token id for generation
+    eos_id = tokenizer.instruct_tokenizer.tokenizer.eos_id
+    model.config.pad_token_id = eos_id
+    if hasattr(model, "generation_config"):
+        model.generation_config.pad_token_id = eos_id
 
     # Load dataset
     ds = load_jsonl_dataset(os.path.join(data_dir, f"{split}.jsonl"))
 
     preds, refs = [], []
     for ex in ds:
-        # Build prompt
+        # Build prompt -> token ids
         prompt = build_prompt(ex["input"])
         messages = [{"role": "user", "content": prompt}]
         chat_request = ChatCompletionRequest(messages=messages)
-        encoded = tokenizer.encode_chat_completion(chat_request)
-        input_ids = tokenizer.convert_tokens_to_ids(encoded.tokens)
-        input_ids = tokenizer.prepare_for_model(input_ids, return_tensors="pt", max_length=max_length, truncation=True)["input_ids"].to(model.device)
+        tokenized = tokenizer.encode_chat_completion(chat_request)
+        ids = tokenized.tokens  # already int token IDs
+
+        # Truncate input if needed
+        if len(ids) > max_length:
+            ids = ids[:max_length]
+
+        input_ids = torch.tensor([ids], device=model.device)
 
         # Generate
-        outputs = model.generate(
-            input_ids=input_ids,
-            max_new_tokens=max_new_tokens,
-            do_sample=False
-        )
-        pred = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                pad_token_id=eos_id,
+            )
+        # mistral_common decode expects a list[int]
+        pred = tokenizer.decode(outputs[0].tolist(), skip_special_tokens=True).strip()
 
         preds.append(pred)
         refs.append(ex["output"])
@@ -72,7 +100,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
 
-    # Quick classification_report (Implicit vs Explicit at text-level)
+    # Simple text-level report
     y_true = ["Implicit" if "<Implicit>" in r else "Explicit" for r in refs]
     y_pred = ["Implicit" if "<Implicit>" in p else "Explicit" for p in preds]
 
