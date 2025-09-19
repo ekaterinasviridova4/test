@@ -76,10 +76,7 @@ Sentence:
      return prompt
 
 def tokenize_supervised(example, tokenizer, max_length=2048):
-    """
-    Build [user prompt + assistant output] as chat input.
-    Mask out prompt tokens so loss is only on the output.
-    """
+  
     # Build messages (user prompt)
     prompt = build_prompt(example["input"])
     messages = [{"role": "user", "content": prompt}]
@@ -87,9 +84,7 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
     prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
     # Assistant output tokens
-    assistant_messages = [{"role": "assistant", "content": example["output"]}]
-    assistant_request = ChatCompletionRequest(messages=assistant_messages)
-    target_tokens = tokenizer.encode_chat_completion(assistant_request).tokens 
+    target_tokens = tokenizer.instruct_tokenizer.encode(example["output"])
 
     # Build full sequence
     full_tokens = prompt_tokens + target_tokens
