@@ -87,9 +87,9 @@ def tokenize_supervised(example, tokenizer, max_length=2048):
     prompt_tokens = tokenizer.encode_chat_completion(chat_request).tokens
 
     # Assistant output tokens
-    target_tokens = tokenizer.encode(example["output"]).tokens
-    if len(target_tokens) > max_length:
-        target_tokens = target_tokens[:max_length]
+    assistant_messages = [{"role": "assistant", "content": example["output"]}]
+    assistant_request = ChatCompletionRequest(messages=assistant_messages)
+    target_tokens = tokenizer.encode_chat_completion(assistant_request).tokens 
 
     # Build full sequence
     full_tokens = prompt_tokens + target_tokens
