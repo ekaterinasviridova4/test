@@ -6,7 +6,6 @@ import argparse
 from peft import PeftModel
 import torch
 from datasets import Dataset
-from skklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
