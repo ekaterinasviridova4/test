@@ -112,7 +112,6 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
 
-    # Refine span counting to consider only valid spans between tags
     import re
 
     def count_valid_spans(data):
