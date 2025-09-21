@@ -13,7 +13,7 @@ mkdir -p "$LOGDIR"
 W_HOURS=1                  # Walltime in hours
 L_NGPUS=1                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
-P_MINGPUMEMORY=10000       # Minimum GPU memory in MB (40 GB for larger model)
+P_MINGPUMEMORY=20000       # Minimum GPU memory in MB (40 GB for larger model)
 
 # Submit the job
 OAR_OUT=$(oarsub \
