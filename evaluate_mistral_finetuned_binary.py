@@ -5,7 +5,9 @@ import json
 import argparse
 from peft import PeftModel
 import torch
+import re
 from datasets import Dataset
+from sklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
@@ -111,8 +113,6 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
 
-    import re
-
     def count_valid_spans(data):
         implicit_pattern = re.compile(r"<Implicit>.*?</Implicit>")
         explicit_pattern = re.compile(r"<Explicit>.*?</Explicit>")
@@ -138,6 +138,67 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
         f.write(counts_report)
 
     print(counts_report)
+
+    def extract_spans(data):
+        """Extract spans and their labels from the data."""
+        spans = []
+        implicit_pattern = re.compile(r"<Implicit>(.*?)</Implicit>")
+        explicit_pattern = re.compile(r"<Explicit>(.*?)</Explicit>")
+
+        for text in data:
+            spans.extend([("Implicit", span.strip().split()) for span in implicit_pattern.findall(text)])
+            spans.extend([("Explicit", span.strip().split()) for span in explicit_pattern.findall(text)])
+
+        return spans
+
+    def token_overlap(span1, span2):
+        """Calculate token-level overlap between two spans."""
+        set1, set2 = set(span1), set(span2)
+        return len(set1 & set2) / len(set1 | set2)
+
+    def evaluate_spans(pred_spans, ref_spans, threshold=0.8):
+        """Evaluate predicted spans against reference spans."""
+        y_true, y_pred = [], []
+
+        matched_preds = set()
+        for ref_label, ref_tokens in ref_spans:
+            matched = False
+            for i, (pred_label, pred_tokens) in enumerate(pred_spans):
+                if i in matched_preds:
+                    continue
+                overlap = token_overlap(ref_tokens, pred_tokens)
+                if overlap >= threshold:
+                    y_true.append(ref_label)
+                    y_pred.append(pred_label)
+                    matched_preds.add(i)
+                    matched = True
+                    break
+            if not matched:
+                y_true.append(ref_label)
+                y_pred.append("O")  # No matching prediction, set to 'O'
+
+        # Penalize unmatched predictions
+        for i, (pred_label, pred_tokens) in enumerate(pred_spans):
+            if i not in matched_preds:
+                y_true.append("O")
+                y_pred.append(pred_label)
+
+        return y_true, y_pred
+
+    # Extract spans from predictions and references
+    pred_spans = extract_spans(preds)
+    ref_spans = extract_spans(refs)
+
+    # Evaluate spans
+    y_true, y_pred = evaluate_spans(pred_spans, ref_spans, threshold=0.8)
+
+    # Generate fine-grained classification report
+    fine_grained_report = classification_report(y_true, y_pred, digits=3)
+    print(fine_grained_report)
+
+    # Save the fine-grained report to a file
+    with open(os.path.join(pred_dir, f"{split}_classification_report.txt"), "w") as f:
+        f.write(fine_grained_report)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on Implicit/Explicit tagging")
