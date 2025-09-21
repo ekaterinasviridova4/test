@@ -56,7 +56,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 
     # Set PAD (use EOS)
     eos_id = tokenizer.instruct_tokenizer.tokenizer.eos_id
-    model.config.pad_token_id = eos_id
+    model.config.pad_token_id = eos_id #TODO: check if good id
     if hasattr(model, "generation_config"):
         model.generation_config.pad_token_id = eos_id
 
@@ -111,6 +111,33 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
         for p, r in zip(preds, refs):
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
+
+    # Count spans for fine-grained evaluation
+    def count_spans(data):
+        implicit_count = sum(data.count("<Implicit>") for data in data)
+        explicit_count = sum(data.count("<Explicit>") for data in data)
+        return implicit_count, explicit_count
+
+    # Refine span counting to consider only valid spans between tags
+    import re
+
+    def count_valid_spans(data):
+        implicit_pattern = re.compile(r"<Implicit>.*?</Implicit>")
+        explicit_pattern = re.compile(r"<Explicit>.*?</Explicit>")
+
+        implicit_count = sum(len(implicit_pattern.findall(d)) for d in data)
+        explicit_count = sum(len(explicit_pattern.findall(d)) for d in data)
+
+        return implicit_count, explicit_count
+
+    # Count valid spans in predictions and references
+    implicit_preds, explicit_preds = count_valid_spans(preds)
+    implicit_refs, explicit_refs = count_valid_spans(refs)
+
+    print(f"Valid Implicit spans in predictions: {implicit_preds}")
+    print(f"Valid Explicit spans in predictions: {explicit_preds}")
+    print(f"Valid Implicit spans in references: {implicit_refs}")
+    print(f"Valid Explicit spans in references: {explicit_refs}")
 
     # Simple label-at-text-level report
     y_true = ["Implicit" if "<Implicit>" in r else "Explicit" for r in refs]
