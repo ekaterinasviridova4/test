@@ -6,7 +6,7 @@ import argparse
 from peft import PeftModel
 import torch
 from datasets import Dataset
-from sklearn.metrics import classification_report
+from skklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
@@ -112,12 +112,6 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
             f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
 
-    # Count spans for fine-grained evaluation
-    def count_spans(data):
-        implicit_count = sum(data.count("<Implicit>") for data in data)
-        explicit_count = sum(data.count("<Explicit>") for data in data)
-        return implicit_count, explicit_count
-
     # Refine span counting to consider only valid spans between tags
     import re
 
@@ -134,19 +128,18 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     implicit_preds, explicit_preds = count_valid_spans(preds)
     implicit_refs, explicit_refs = count_valid_spans(refs)
 
-    print(f"Valid Implicit spans in predictions: {implicit_preds}")
-    print(f"Valid Explicit spans in predictions: {explicit_preds}")
-    print(f"Valid Implicit spans in references: {implicit_refs}")
-    print(f"Valid Explicit spans in references: {explicit_refs}")
+    # Save counts to a report file
+    counts_report = (
+        f"Valid Implicit spans in predictions: {implicit_preds}\n"
+        f"Valid Explicit spans in predictions: {explicit_preds}\n"
+        f"Valid Implicit spans in references: {implicit_refs}\n"
+        f"Valid Explicit spans in references: {explicit_refs}\n"
+    )
 
-    # Simple label-at-text-level report
-    y_true = ["Implicit" if "<Implicit>" in r else "Explicit" for r in refs]
-    y_pred = ["Implicit" if "<Implicit>" in p else "Explicit" for p in preds]
+    with open(os.path.join(pred_dir, f"{split}_counts_report.txt"), "w") as f:
+        f.write(counts_report)
 
-    report = classification_report(y_true, y_pred, digits=3)
-    with open(os.path.join(pred_dir, f"{split}_report.txt"), "w") as f:
-        f.write(report)
-    print(report)
+    print(counts_report)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on Implicit/Explicit tagging")
