@@ -145,15 +145,15 @@ def parse_args():
     parser.add_argument("--pred_dir", type=str, 
                         default="results_finetune_binary",
                         help="Directory to save predictions and reports")
-    parser.add_argument('--limit', type=int, #to limit the number of examples for testing
-                        default=20,
-                        help='Limit number of examples for testing')
+    # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
+    #                     default=20,
+    #                     help='Limit number of examples for testing')
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max_length", type=int, default=2048)
     parser.add_argument("--lr", type=float, default=2e-5)
-    parser.add_argument("--epochs", type=int, default=1) # by default 3 epochs
-    parser.add_argument("--train_bs", type=int, default=1) # by default 2
-    parser.add_argument("--eval_bs", type=int, default=1) # by default 2
+    parser.add_argument("--epochs", type=int, default=3) # by default 3 epochs
+    parser.add_argument("--train_bs", type=int, default=2) # by default 2
+    parser.add_argument("--eval_bs", type=int, default=2) # by default 2
     return parser.parse_args()
 
 
@@ -166,9 +166,9 @@ def main():
     train_ds = load_jsonl_dataset(os.path.join(args.data_dir, "train.jsonl"))
     dev_ds   = load_jsonl_dataset(os.path.join(args.data_dir, "dev.jsonl"))
 
-    if args.limit:
-        train_ds = train_ds.select(range(min(args.limit, len(train_ds))))
-        dev_ds = dev_ds.select(range(min(args.limit, len(dev_ds))))
+    # if args.limit:
+    #     train_ds = train_ds.select(range(min(args.limit, len(train_ds))))
+    #     dev_ds = dev_ds.select(range(min(args.limit, len(dev_ds))))
 
     # Setup model and tokenizer
     model, tokenizer = setup_model_with_lora()

@@ -6,8 +6,9 @@ import argparse
 from peft import PeftModel
 import torch
 import re
+import numpy as np
 from datasets import Dataset
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
@@ -199,6 +200,20 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     # Save the fine-grained report to a file
     with open(os.path.join(pred_dir, f"{split}_classification_report.txt"), "w") as f:
         f.write(fine_grained_report)
+
+    # --- Confusion Matrix ---
+    labels = ["Implicit", "Explicit", "O"]
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+
+    cm_report = "Confusion Matrix (rows = true, cols = predicted):\n"
+    cm_report += "Labels: " + ", ".join(labels) + "\n"
+    cm_report += np.array2string(cm, separator=", ")
+
+    print(cm_report)
+
+    # Save confusion matrix
+    with open(os.path.join(pred_dir, f"{split}_confusion_matrix.txt"), "w") as f:
+        f.write(cm_report)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on Implicit/Explicit tagging")

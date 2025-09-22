@@ -1,4 +1,4 @@
-NAME="mistral_eval_binary"
+NAME="mistral_finetune_binary"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/test"
@@ -10,10 +10,10 @@ export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 mkdir -p "$LOGDIR"
 
 
-W_HOURS=1                  # Walltime in hours
-L_NGPUS=1                  # Number of GPUs (increased for larger model)
+W_HOURS=10                  # Walltime in hours
+L_NGPUS=2                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
-P_MINGPUMEMORY=20000       # Minimum GPU memory in MB (40 GB for larger model)
+P_MINGPUMEMORY=40000       # Minimum GPU memory in MB (40 GB for larger model)
 
 # Submit the job
 OAR_OUT=$(oarsub \
@@ -28,6 +28,9 @@ OAR_OUT=$(oarsub \
      echo \"Hugging Face Token: \$HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
+     echo 'Starting training...'; \
+     python3 mistral_finetune_binary.py; \
+     echo 'Training finished. Starting evaluation...'; \
      python3 evaluate_mistral_finetuned_binary.py \
         --data_dir out_jsonl \
         --output_dir results_finetune_binary \
