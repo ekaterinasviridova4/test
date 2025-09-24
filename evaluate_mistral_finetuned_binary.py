@@ -140,15 +140,40 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 
     print(counts_report)
 
+    def load_predictions_and_gold(pred_path, gold_path):
+        """Load predictions and gold data from JSONL files."""
+        preds, refs = [], []
+
+        # Load predictions
+        with open(pred_path, "r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                preds.append(data["pred"].strip())
+
+        # Load gold data
+        with open(gold_path, "r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                refs.append(data["output"].strip())
+
+        return preds, refs
+
     def extract_spans(data):
         """Extract spans and their labels from the data."""
         spans = []
-        implicit_pattern = re.compile(r"<Implicit>(.*?)</Implicit>")
-        explicit_pattern = re.compile(r"<Explicit>(.*?)</Explicit>")
+        implicit_pattern = re.compile(r"<Implicit>\s*(.*?)\s*</Implicit>", re.DOTALL)
+        explicit_pattern = re.compile(r"<Explicit>\s*(.*?)\s*</Explicit>", re.DOTALL)
 
         for text in data:
-            spans.extend([("Implicit", span.strip().split()) for span in implicit_pattern.findall(text)])
-            spans.extend([("Explicit", span.strip().split()) for span in explicit_pattern.findall(text)])
+            implicit_matches = implicit_pattern.findall(text)
+            explicit_matches = explicit_pattern.findall(text)
+
+            # Log extracted spans for debugging
+            print(f"Extracted Implicit spans: {implicit_matches}")
+            print(f"Extracted Explicit spans: {explicit_matches}")
+
+            spans.extend([("Implicit", span.strip().split()) for span in implicit_matches])
+            spans.extend([("Explicit", span.strip().split()) for span in explicit_matches])
 
         return spans
 
@@ -168,7 +193,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
                 if i in matched_preds:
                     continue
                 overlap = token_overlap(ref_tokens, pred_tokens)
-                if overlap >= threshold:
+                if overlap >= threshold and ref_label == pred_label:
                     y_true.append(ref_label)
                     y_pred.append(pred_label)
                     matched_preds.add(i)
@@ -185,6 +210,11 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
                 y_pred.append(pred_label)
 
         return y_true, y_pred
+
+    # Load predictions and gold data
+    pred_path = os.path.join(pred_dir, f"{split}_predictions.jsonl")
+    gold_path = os.path.join(data_dir, f"{split}.jsonl")
+    preds, refs = load_predictions_and_gold(pred_path, gold_path)
 
     # Extract spans from predictions and references
     pred_spans = extract_spans(preds)
