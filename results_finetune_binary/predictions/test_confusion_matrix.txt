@@ -1,5 +1,0 @@
-Confusion Matrix (rows = true, cols = predicted):
-Labels: Implicit, Explicit, O
-[[21, 39, 47],
- [ 5, 54, 78],
- [ 6,  6,  0]]
