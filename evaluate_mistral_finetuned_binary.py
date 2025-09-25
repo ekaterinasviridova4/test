@@ -211,9 +211,12 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 
         return y_true, y_pred
 
+    # Now timestamp
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     # Load predictions and gold data
-    pred_path = os.path.join(pred_dir, f"{split}_predictions.jsonl")
-    gold_path = os.path.join(data_dir, f"{split}.jsonl")
+    pred_path = os.path.join(pred_dir, f"{now}_{split}_predictions.jsonl")
+    gold_path = os.path.join(data_dir, f"{now}_{split}.jsonl")
     preds, refs = load_predictions_and_gold(pred_path, gold_path)
 
     # Extract spans from predictions and references
