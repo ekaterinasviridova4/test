@@ -9,10 +9,13 @@ import torch
 import re
 import numpy as np
 from datasets import Dataset
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from transformers import Mistral3ForConditionalGeneration, BitsAndBytesConfig
+
+# Now timestamp
+now = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 def load_jsonl_dataset(path):
     rows = []
@@ -39,7 +42,7 @@ Sentence:
 """
      return prompt
 
-def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_tokens=512):
+def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_tokens=2048):
     os.makedirs(pred_dir, exist_ok=True)
 
     # Load base tokenizer/model + attach LoRA adapters saved in model_dir
@@ -57,136 +60,99 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     )
     model = PeftModel.from_pretrained(base_model, model_dir)
 
-    # Set PAD (use EOS)
+    # Set EOS
     eos_id = tokenizer.instruct_tokenizer.tokenizer.eos_id
-    model.config.pad_token_id = eos_id #TODO: check if good id
-    if hasattr(model, "generation_config"):
-        model.generation_config.pad_token_id = eos_id
 
     # Load dataset
     ds = load_jsonl_dataset(os.path.join(data_dir, f"{split}.jsonl"))
 
     preds, refs = [], []
-    for ex in ds:
-        # Build prompt -> token ids (already int ids)
-        prompt = build_prompt(ex["input"])
-        chat_request = ChatCompletionRequest(messages=[{"role": "user", "content": prompt}])
-        tokenized = tokenizer.encode_chat_completion(chat_request)
-        ids = tokenized.tokens
+    out_path = os.path.join(pred_dir, f"{now}_{split}_predictions.jsonl")
 
-        # Truncate input if needed
-        if len(ids) > max_length:
-            ids = ids[:max_length]
+    # Generate predictions
+    with open(out_path, "w", encoding="utf-8") as wf:
+        for ex in ds:
+            prompt = build_prompt(ex["input"])
+            chat_request = ChatCompletionRequest(messages=[{"role": "user", "content": prompt}])
+            encoded = tokenizer.encode_chat_completion(chat_request)
+            ids = encoded.tokens[:max_length]
 
-        input_ids = torch.tensor([ids], device=model.device)
-        attention_mask = torch.ones_like(input_ids)  # avoid warning & ensure reliable behavior
+            input_ids = torch.tensor([ids], device=model.device)
+            attention_mask = torch.ones_like(input_ids)
 
-        # Generate
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,
-                pad_token_id=eos_id,
-            )
+            with torch.no_grad():
+                out = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                )
 
-        # Decode ONLY the newly generated tokens (not the prompt)
-        full = outputs[0].tolist()
-        prompt_len = input_ids.shape[1]
-        gen_only = full[prompt_len:]
+            # Decode ONLY the newly generated tokens (not the prompt)
+            full = out[0].tolist()
+            gen_only = full[input_ids.shape[1]:]
+            if eos_id in gen_only:
+                gen_only = gen_only[:gen_only.index(eos_id)]
+            pred = tokenizer.decode(gen_only).strip()
 
-        # Trim at first EOS if present
-        try:
-            eos_pos = gen_only.index(eos_id)
-            gen_only = gen_only[:eos_pos]
-        except ValueError:
-            pass  # no EOS in tail
+            preds.append(pred)
+            refs.append(ex["output"])
 
-        pred = tokenizer.decode(gen_only).strip()  # no skip_special_tokens kwarg in mistral_common
+            wf.write(json.dumps({"pred": pred, "ref": ex["output"]}, ensure_ascii=False) + "\n")
 
-        preds.append(pred)
-        refs.append(ex["output"])
-
-    # Save raw predictions
-    out_path = os.path.join(pred_dir, f"{split}_predictions.jsonl")
-    with open(out_path, "w", encoding="utf-8") as f:
-        for p, r in zip(preds, refs):
-            f.write(json.dumps({"pred": p, "ref": r}, ensure_ascii=False) + "\n")
     print(f"Saved predictions to {out_path}")
+
+    # Reload predictions and gold from same file 
+    def load_predictions_and_gold(pred_path):
+        preds, refs = [], []
+        with open(pred_path, "r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                preds.append(data["pred"].strip())
+                refs.append(data["ref"].strip())
+        return preds, refs
+
+    preds, refs = load_predictions_and_gold(out_path)
 
     def count_valid_spans(data):
         implicit_pattern = re.compile(r"<Implicit>.*?</Implicit>")
         explicit_pattern = re.compile(r"<Explicit>.*?</Explicit>")
-
         implicit_count = sum(len(implicit_pattern.findall(d)) for d in data)
         explicit_count = sum(len(explicit_pattern.findall(d)) for d in data)
-
         return implicit_count, explicit_count
 
-    # Count valid spans in predictions and references
     implicit_preds, explicit_preds = count_valid_spans(preds)
     implicit_refs, explicit_refs = count_valid_spans(refs)
 
-    # Save counts to a report file
     counts_report = (
         f"Valid Implicit spans in predictions: {implicit_preds}\n"
         f"Valid Explicit spans in predictions: {explicit_preds}\n"
         f"Valid Implicit spans in references: {implicit_refs}\n"
         f"Valid Explicit spans in references: {explicit_refs}\n"
     )
-
     with open(os.path.join(pred_dir, f"{split}_counts_report.txt"), "w") as f:
         f.write(counts_report)
-
     print(counts_report)
 
-    def load_predictions_and_gold(pred_path, gold_path):
-        """Load predictions and gold data from JSONL files."""
-        preds, refs = [], []
-
-        # Load predictions
-        with open(pred_path, "r", encoding="utf-8") as f:
-            for line in f:
-                data = json.loads(line)
-                preds.append(data["pred"].strip())
-
-        # Load gold data
-        with open(gold_path, "r", encoding="utf-8") as f:
-            for line in f:
-                data = json.loads(line)
-                refs.append(data["output"].strip())
-
-        return preds, refs
-
+    # Extract spans 
     def extract_spans(data):
-        """Extract spans and their labels from the data."""
         spans = []
         implicit_pattern = re.compile(r"<Implicit>\s*(.*?)\s*</Implicit>", re.DOTALL)
         explicit_pattern = re.compile(r"<Explicit>\s*(.*?)\s*</Explicit>", re.DOTALL)
-
         for text in data:
             implicit_matches = implicit_pattern.findall(text)
             explicit_matches = explicit_pattern.findall(text)
-
-            # Log extracted spans for debugging
-            print(f"Extracted Implicit spans: {implicit_matches}")
-            print(f"Extracted Explicit spans: {explicit_matches}")
-
             spans.extend([("Implicit", span.strip().split()) for span in implicit_matches])
             spans.extend([("Explicit", span.strip().split()) for span in explicit_matches])
-
         return spans
 
+    # Matching and evaluation 
     def token_overlap(span1, span2):
-        """Calculate token-level overlap between two spans."""
         set1, set2 = set(span1), set(span2)
-        return len(set1 & set2) / len(set1 | set2)
+        return len(set1 & set2) / len(set1 | set2) if set1 | set2 else 0.0
 
     def evaluate_spans(pred_spans, ref_spans, threshold=0.8):
-        """Evaluate predicted spans against reference spans."""
         y_true, y_pred = [], []
-
         matched_preds = set()
         for ref_label, ref_tokens in ref_spans:
             matched = False
@@ -202,52 +168,22 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
                     break
             if not matched:
                 y_true.append(ref_label)
-                y_pred.append("O")  # No matching prediction, set to 'O'
-
-        # Penalize unmatched predictions
-        for i, (pred_label, pred_tokens) in enumerate(pred_spans):
+                y_pred.append("O")
+        for i, (pred_label, _) in enumerate(pred_spans):
             if i not in matched_preds:
                 y_true.append("O")
                 y_pred.append(pred_label)
-
         return y_true, y_pred
 
-    # Now timestamp
-    now = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    # Load predictions and gold data
-    pred_path = os.path.join(pred_dir, f"{now}_{split}_predictions.jsonl")
-    gold_path = os.path.join(data_dir, f"{now}_{split}.jsonl")
-    preds, refs = load_predictions_and_gold(pred_path, gold_path)
-
-    # Extract spans from predictions and references
     pred_spans = extract_spans(preds)
     ref_spans = extract_spans(refs)
-
-    # Evaluate spans
     y_true, y_pred = evaluate_spans(pred_spans, ref_spans, threshold=0.8)
 
-    # Generate fine-grained classification report
+    # Report 
     fine_grained_report = classification_report(y_true, y_pred, digits=3)
     print(fine_grained_report)
-
-    # Save the fine-grained report to a file
     with open(os.path.join(pred_dir, f"{split}_classification_report.txt"), "w") as f:
         f.write(fine_grained_report)
-
-    # --- Confusion Matrix ---
-    labels = ["Implicit", "Explicit", "O"]
-    cm = confusion_matrix(y_true, y_pred, labels=labels)
-
-    cm_report = "Confusion Matrix (rows = true, cols = predicted):\n"
-    cm_report += "Labels: " + ", ".join(labels) + "\n"
-    cm_report += np.array2string(cm, separator=", ")
-
-    print(cm_report)
-
-    # Save confusion matrix
-    with open(os.path.join(pred_dir, f"{split}_confusion_matrix.txt"), "w") as f:
-        f.write(cm_report)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on Implicit/Explicit tagging")
@@ -268,7 +204,7 @@ def parse_args():
                         default=2048,
                         help='Max input length for evaluation')
     parser.add_argument('--max_new_tokens', type=int,
-                        default=512,
+                        default=2048,
                         help='Max number of new tokens to generate')
     return parser.parse_args()
 
