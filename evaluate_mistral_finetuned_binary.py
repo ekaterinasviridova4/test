@@ -130,7 +130,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
         f"Valid Implicit spans in references: {implicit_refs}\n"
         f"Valid Explicit spans in references: {explicit_refs}\n"
     )
-    with open(os.path.join(pred_dir, f"{split}_counts_report.txt"), "w") as f:
+    with open(os.path.join(pred_dir, f"{now}_{split}_counts_report.txt"), "w") as f:
         f.write(counts_report)
     print(counts_report)
 
@@ -182,7 +182,7 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     # Report 
     fine_grained_report = classification_report(y_true, y_pred, digits=3)
     print(fine_grained_report)
-    with open(os.path.join(pred_dir, f"{split}_classification_report.txt"), "w") as f:
+    with open(os.path.join(pred_dir, f"{now}_{split}_classification_report.txt"), "w") as f:
         f.write(fine_grained_report)
 
 def parse_args():

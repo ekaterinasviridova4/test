@@ -1,7 +1,7 @@
 NAME="evaluate_mistral_finetune_binary"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
-PROJECT_DIR="$HOME/test"
+PROJECT_DIR="$HOME/phd/test"
 EMAIL="ekaterina.sviridova@inria.fr"
 LOGDIR="$HOME/logs"
 export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
@@ -28,7 +28,7 @@ OAR_OUT=$(oarsub \
      echo \"Hugging Face Token: \$HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     python3 evaluate_mistral_finetuned_binary.py > \"$LOGDIR/debug_log.txt\" 2>&1 \
+     python3 evaluate_mistral_finetuned_binary.py \
         --data_dir out_jsonl \
         --output_dir results_finetune_binary \
         --pred_dir results_finetune_binary/predictions \
