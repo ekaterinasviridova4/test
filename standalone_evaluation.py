@@ -64,7 +64,7 @@ def jaccard(a: List[str], b: List[str]) -> float:
         return 0.0
     return len(sa & sb) / len(sa | sb)
 
-def match_doc_spans(pred_spans: List[Dict], gold_spans: List[Dict], threshold: float = 0.7):
+def match_doc_spans(pred_spans: List[Dict], gold_spans: List[Dict], threshold: float = 0.8):
     """
     Greedy highest-overlap matching per document, label-must-match, thresholded.
     Returns:
@@ -100,7 +100,7 @@ def match_doc_spans(pred_spans: List[Dict], gold_spans: List[Dict], threshold: f
 
 # ---------- Evaluation pipeline ----------
 
-def evaluate(pred_file: str, gold_file: str, out_dir: str, threshold: float = 0.7):
+def evaluate(pred_file: str, gold_file: str, out_dir: str, threshold: float = 0.8):
     os.makedirs(out_dir, exist_ok=True)
 
     # Expect: predictions.jsonl contains {"pred": "<Tagged text>"}
@@ -177,17 +177,17 @@ def evaluate(pred_file: str, gold_file: str, out_dir: str, threshold: float = 0.
     print(cm)
 
     # Save reports
-    with open(os.path.join(out_dir, "classification_report.txt"), "w") as f:
+    with open(os.path.join(out_dir, "20250926_155327_classification_report.txt"), "w") as f:
         f.write(classification_report(y_true, y_pred, labels=labels_all, digits=3, zero_division=0))
         f.write("\n\nLabels: " + ", ".join(labels_all) + "\n")
         f.write(np.array2string(cm, separator=", "))
 
-    with open(os.path.join(out_dir, "confusion_matrix.txt"), "w") as f:
+    with open(os.path.join(out_dir, "20250926_155327_confusion_matrix.txt"), "w") as f:
         f.write("Labels: " + ", ".join(labels_all) + "\n")
         f.write(np.array2string(cm, separator=", "))
 
     # Exact vs partial summary
-    with open(os.path.join(out_dir, "summary.txt"), "w") as f:
+    with open(os.path.join(out_dir, "20250926_155327_summary.txt"), "w") as f:
         f.write(f"Documents compared: {n}\n")
         f.write(f"Total gold spans: {total_gold_spans}\n")
         f.write(f"Total pred spans: {total_pred_spans}\n")
@@ -195,7 +195,7 @@ def evaluate(pred_file: str, gold_file: str, out_dir: str, threshold: float = 0.
         f.write(f"Partial matches (label + Jaccard≥{threshold}): {partial_matches}\n")
 
     # Diagnostics CSV for manual inspection
-    with open(os.path.join(out_dir, "diagnostics.csv"), "w", encoding="utf-8", newline="") as f:
+    with open(os.path.join(out_dir, "20250926_155327_diagnostics.csv"), "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerows(diag_rows)
 
@@ -204,7 +204,7 @@ def evaluate(pred_file: str, gold_file: str, out_dir: str, threshold: float = 0.
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Span-level evaluation for <Implicit>/<Explicit> tagging.")
     p.add_argument("--predictions_file", required=True, help="JSONL with lines like {'pred': '<tagged text>'}")
-    p.add_argument("--gold_file", required=True, help="JSONL with lines like {'output': '<tagged text>'}")
+    p.add_argument("--gold_file", required=True, help="JSONL with lines like {'ref': '<tagged text>'}")
     p.add_argument("--output_dir", required=True, help="Where to save reports")
     p.add_argument("--threshold", type=float, default=0.8, help="Jaccard token-overlap threshold")
     args = p.parse_args()
