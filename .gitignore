@@ -1,1 +1,3 @@
 *.DS_Store
+/test/standalone_evaluation.py
+/test/preprocess_conll.py
