@@ -1,7 +1,16 @@
 *.DS_Store
 /test/standalone_evaluation.py
+/test/standalone_evaluation_BERT+Jaccard.py
 /test/preprocess_conll.py
 /test/results_finetune_binary/predictions/classification_report.txt
 /test/results_finetune_binary/predictions/confusion_matrix.txt
 /test/results_finetune_binary/predictions/diagnostics.csv
 /test/results_finetune_binary/predictions/summary.txt
+/test/results_finetune_binary/evaluation/bert_classification_report.txt
+/test/results_finetune_binary/evaluation/bert_confusion_matrix.txt
+/test/results_finetune_binary/evaluation/bert_diagnostics.csv
+/test/results_finetune_binary/evaluation/bert_summary.txt
+/test/results_finetune_binary/evaluation/classification_report.txt
+/test/results_finetune_binary/evaluation/confusion_matrix.txt
+/test/results_finetune_binary/evaluation/diagnostics.csv
+/test/results_finetune_binary/evaluation/summary.txt
