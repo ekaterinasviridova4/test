@@ -14,3 +14,4 @@
 /test/results_finetune_binary/evaluation/confusion_matrix.txt
 /test/results_finetune_binary/evaluation/diagnostics.csv
 /test/results_finetune_binary/evaluation/summary.txt
+/test/settings_mistral_finetune.py
