@@ -1,3 +1,7 @@
 *.DS_Store
 /test/standalone_evaluation.py
 /test/preprocess_conll.py
+/test/results_finetune_binary/predictions/classification_report.txt
+/test/results_finetune_binary/predictions/confusion_matrix.txt
+/test/results_finetune_binary/predictions/diagnostics.csv
+/test/results_finetune_binary/predictions/summary.txt
