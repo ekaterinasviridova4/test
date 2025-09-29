@@ -9,12 +9,6 @@ results_finetune_binary/predictions/classification_report.txt
 results_finetune_binary/predictions/confusion_matrix.txt
 results_finetune_binary/predictions/diagnostics.csv
 results_finetune_binary/predictions/summary.txt
-results_finetune_binary/evaluation/bert_classification_report.txt
-results_finetune_binary/evaluation/bert_confusion_matrix.txt
-results_finetune_binary/evaluation/bert_diagnostics.csv
-results_finetune_binary/evaluation/bert_summary.txt
-results_finetune_binary/evaluation/classification_report.txt
-results_finetune_binary/evaluation/confusion_matrix.txt
-results_finetune_binary/evaluation/diagnostics.csv
-results_finetune_binary/evaluation/summary.txt
+results_finetune_binary/evaluation/
+results_finetune_premise_claim/evaluation/
 settings_mistral_finetune.py
