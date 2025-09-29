@@ -1,4 +1,5 @@
 *.DS_Store
+*.log
 /test/standalone_evaluation.py
 /test/standalone_evaluation_BERT+Jaccard.py
 /test/preprocess_conll.py
