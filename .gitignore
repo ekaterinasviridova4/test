@@ -4,6 +4,7 @@ finetuned_mistral/
 standalone_evaluation.py
 standalone_evaluation_BERT+Jaccard.py
 preprocess_conll.py
+pos_neg_premise_claim.conll
 results_finetune_binary/predictions/classification_report.txt
 results_finetune_binary/predictions/confusion_matrix.txt
 results_finetune_binary/predictions/diagnostics.csv
