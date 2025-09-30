@@ -1,0 +1,9 @@
+              precision    recall  f1-score   support
+
+     premise     0.7309    0.2967    0.4221      1675
+       claim     0.3590    0.3070    0.3310       684
+           O     0.2742    0.7484    0.4014       632
+
+   micro avg     0.3946    0.3945    0.3946      2991
+   macro avg     0.4547    0.4507    0.3848      2991
+weighted avg     0.5493    0.3945    0.3969      2991
