@@ -10,10 +10,10 @@ export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 mkdir -p "$LOGDIR"
 
 
-W_HOURS=1                  # Walltime in hours
-L_NGPUS=1                  # Number of GPUs (increased for larger model)
+W_HOURS=10                  # Walltime in hours
+L_NGPUS=2                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
-P_MINGPUMEMORY=20000       # Minimum GPU memory in MB (40 GB for larger model)
+P_MINGPUMEMORY=40000       # Minimum GPU memory in MB (40 GB for larger model)
 
 # Submit the job
 OAR_OUT=$(oarsub \
@@ -28,10 +28,14 @@ OAR_OUT=$(oarsub \
      echo \"Hugging Face Token: \$HUGGINGFACE_HUB_TOKEN\"; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     python3 evaluate_mistral_finetuned_premise_claim.py \
-        --data_dir out_premise_claim_jsonl \
-        --output_dir results_finetune_premise_claim \
-        --pred_dir results_finetune_premise_claim/predictions \
+     python3 mistral_finetune_finegrained.py \
+        --data_dir out_fine_grained_jsonl \
+        --output_dir results_finetune_finegrained \
+        --pred_dir results_finetune_finegrained/predictions \
+    python3 evaluate_mistral_finetuned_finegrained.py \
+        --data_dir out_fine_grained_jsonl \
+        --output_dir results_finetune_finegrained \
+        --pred_dir results_finetune_finegrained/predictions \
         --split "test"
     " \
 )
