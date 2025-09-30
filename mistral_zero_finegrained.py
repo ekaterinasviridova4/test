@@ -30,7 +30,7 @@ nltk.download("punkt_tab")
 
 # Configure logging
 logging.basicConfig(
-    filename="mistral_zero_binary.log",
+    filename="mistral_zero_finegrained.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -46,12 +46,12 @@ def ensure_huggingface_token():
 ensure_huggingface_token()
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Zero-shot classification using Mistral')
+    parser = argparse.ArgumentParser(description='Zero-shot fine-grained classification using Mistral')
     parser.add_argument('--data_path', type=str, 
-                       default='pos_neg_imp_exp.conll',
+                       default='pos_neg_cleaned.conll',
                        help='Path to the input CONLL file')
     parser.add_argument('--output_dir', type=str,
-                       default='results',
+                       default='results_zero_finegrained',
                        help='Directory to save the results')
     # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
     #                     default=None,
@@ -66,8 +66,10 @@ def parse_conll_file(conll_file_path):
     # Unified tag mapping (B- and I- merged)
     tag2id = {
         "O": 0,
-        "Implicit": 1,
-        "Explicit": 2
+        "Implicature": 1,
+        "Ambiguity": 2,
+        "Presupposition": 3,
+        "Explicit": 4
     }
 
     with open(conll_file_path, 'r') as f:
@@ -92,8 +94,12 @@ def parse_conll_file(conll_file_path):
                 tokens.append(token)
 
                 # Merge B- and I- tags
-                if tag in ["B-Implicit", "I-Implicit"]:
-                    ner_tags.append(tag2id["Implicit"])
+                if tag in ["B-Implicature", "I-Implicature"]:
+                    ner_tags.append(tag2id["Implicature"])
+                elif tag in ["B-Ambiguity", "I-Ambiguity"]:
+                    ner_tags.append(tag2id["Ambiguity"])
+                elif tag in ["B-Presupposition", "I-Presupposition"]:
+                    ner_tags.append(tag2id["Presupposition"])
                 elif tag in ["B-Explicit", "I-Explicit"]:
                     ner_tags.append(tag2id["Explicit"])
                 elif tag == "O":
@@ -113,8 +119,8 @@ def parse_conll_file(conll_file_path):
     return data
 
 # Mapping for conversion
-id2label = {0: "O", 1: "Implicit", 2: "Explicit"}
-label2id = {"O": 0, "Implicit": 1, "Explicit": 2}
+id2label = {0: "O", 1: "Implicature", 2: "Ambiguity", 3: "Presupposition", 4: "Explicit"}
+label2id = {"O": 0, "Implicature": 1, "Ambiguity": 2, "Presupposition": 3, "Explicit": 4}
 
 def reconstruct_sentence(tokens):
     sentence = ""
@@ -150,18 +156,22 @@ def setup_model():
     return model, tokenizer
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to analyze the following sentence and determine whether it is *Implicit* or *Explicit*.
-Explicit refers to transparent and clearly understandable content.
-Implicit refers to hidden meanings or assumptions that are unclear from the given text alone.
+     prompt = f"""Your task is to analyze the following text and classify each sentence as one of the following categories: Implicature, Ambiguity, Presupposition, or Explicit.
+
+Definitions:
+- Implicature: universal knowledge, or information that can be inferred from the utterance and its context, though not explicitly stated.
+- Ambiguity: text that has multiple possible interpretations or meanings, cannot be resolved from context alone, requiring further precision.
+- Presupposition: background assumptions or information that is taken for granted, presenting a notion as already shared by the author and their addressee(s).
+- Explicit: information that is clearly and directly stated.
 
 Instructions:
-- For each Implicit or Explicit sentence found, return a separate JSON object with exactly two fields:
-  - "sentence": the exact span from the input sentence expressing the argument.
-  - "type": "Explicit" or "Implicit".
+- For each span found, return a separate JSON object with exactly two fields:
+  - "sentence": the exact span from the input sentence expressing the content.
+  - "type": "Implicature", "Ambiguity", "Presupposition", or "Explicit".
 - If none of them is found, return one JSON object with both fields set to "".
 - Do **not** wrap the JSON objects in a list (no square brackets).
 - Separate multiple JSON objects with **commas and spaces only**, e.g.:
-  {{ "sentence": "...", "type": "Implicit" }}, {{ "sentence": "...", "type": "Explicit" }}
+  {{ "sentence": "...", "type": "Implicature" }}, {{ "sentence": "...", "type": "Explicit" }}
 - The output must be strictly valid JSON:
   - Use double quotes only
   - Close all braces correctly
@@ -199,7 +209,9 @@ def get_sentence_level_labels(text, gold):
     for sent in sents:
         n = len(word_tokenize(sent))
         tag_slice = labels[idx:idx+n]
-        label = ("Implicit" if any("Implicit" in t for t in tag_slice)
+        label = ("Implicature" if any("Implicature" in t for t in tag_slice)
+                 else "Ambiguity" if any("Ambiguity" in t for t in tag_slice)
+                 else "Presupposition" if any("Presupposition" in t for t in tag_slice)
                  else "Explicit" if any("Explicit" in t for t in tag_slice)
                  else "O")
         output.append((sent, label))
@@ -221,7 +233,7 @@ def validate_file(file_path):
 
 def save_predictions(predictions, output_dir):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join(output_dir, f"binary_predictions_{timestamp}.json")
+    output_file = os.path.join(output_dir, f"finegrained_predictions_{timestamp}.json")
     with open(output_file, "w") as f:
         json.dump(predictions, f, indent=2)
     logging.info(f"Predictions saved to {output_file}")
@@ -243,7 +255,7 @@ def evaluate_predictions(predictions, output_dir):
             gold_all.append(gold_label)
             pred_all.append(pred_label)
 
-    report = classification_report(gold_all, pred_all, labels=["Implicit", "Explicit", "O"], digits=4)
+    report = classification_report(gold_all, pred_all, labels=["Implicature", "Ambiguity", "Presupposition", "Explicit", "O"], digits=4)
     logging.info("Evaluation completed")
     output_file = os.path.join(output_dir, "classification_report.txt")
     with open(output_file, "w") as f:

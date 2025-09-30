@@ -29,9 +29,9 @@ OAR_OUT=$(oarsub \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      echo \"Starting zero-shot premise/claim classification...\"; \
-     python3 mistral_zero_premise_claim.py \
-        --data_path pos_neg_premise_claim.conll \
-        --output_dir results_zero_premise_claim; \
+     python3 mistral_zero_finegrained.py \
+        --data_path pos_neg_cleaned.conll \
+        --output_dir results_zero_finegrained; \
      echo \"Zero-shot classification completed.\";
     " \
 )

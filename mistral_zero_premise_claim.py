@@ -302,7 +302,7 @@ def main():
         with torch.no_grad():
             outputs = model.generate(
                 input_ids=input_ids,
-                max_new_tokens=1024,
+                max_new_tokens=2048,
                 do_sample=False
     )
 
