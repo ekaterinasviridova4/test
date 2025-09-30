@@ -179,7 +179,7 @@ def extract_mistral_sentences(output):
     if output.lower().startswith("output:"):
         output = output[len("output:"):].strip()
     pattern = r'\{\s*"sentence"\s*:\s*"(.+?)"\s*,\s*"type"\s*:\s*"(.+?)"\s*\}'
-    return [(s.strip(), t.strip().capitalize()) for s, t in re.findall(pattern, output, re.DOTALL)]
+    return [(s.strip(), t.strip().lower()) for s, t in re.findall(pattern, output, re.DOTALL)]
 
 def get_sentence_level_labels(text, gold):
     tokens = word_tokenize(text.strip())
@@ -229,9 +229,21 @@ def save_predictions(predictions, output_dir):
 
 def evaluate_predictions(predictions, output_dir):
     gold_all, pred_all = [], []
-    for item in predictions:
+    total_extracted_spans = 0
+    
+    for i, item in enumerate(predictions):
         gold_pairs = get_sentence_level_labels(item["sentence"], item["gold"])
         pred_pairs = extract_mistral_sentences(item["mistral_output"])
+        
+        # Debug logging for first few examples
+        if i < 5:
+            logging.info(f"Example {i}:")
+            logging.info(f"  Mistral output: {item['mistral_output'][:200]}...")
+            logging.info(f"  Extracted pred_pairs: {pred_pairs}")
+            logging.info(f"  Gold pairs: {gold_pairs}")
+        
+        total_extracted_spans += len(pred_pairs)
+        
         matched = set()
         pred_sent_map = {}
         for pred_sent, pred_label in pred_pairs:
@@ -243,6 +255,17 @@ def evaluate_predictions(predictions, output_dir):
             pred_label = pred_sent_map.get(i, "O")
             gold_all.append(gold_label)
             pred_all.append(pred_label)
+    
+    logging.info(f"Total examples processed: {len(predictions)}")
+    logging.info(f"Total spans extracted across all examples: {total_extracted_spans}")
+    logging.info(f"Average spans per example: {total_extracted_spans / len(predictions) if predictions else 0:.2f}")
+    
+    # Count label distribution
+    from collections import Counter
+    pred_counter = Counter(pred_all)
+    gold_counter = Counter(gold_all)
+    logging.info(f"Predicted label distribution: {dict(pred_counter)}")
+    logging.info(f"Gold label distribution: {dict(gold_counter)}")
 
     report = classification_report(gold_all, pred_all, labels=["premise", "claim", "O"], digits=4)
     logging.info("Evaluation completed")
