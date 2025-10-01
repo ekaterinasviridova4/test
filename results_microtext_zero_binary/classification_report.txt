@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+    Implicit       0.72      0.17      0.27       230
+    Explicit       0.53      0.88      0.66       226
+
+   micro avg       0.55      0.52      0.53       456
+   macro avg       0.62      0.52      0.46       456
+weighted avg       0.62      0.52      0.46       456
