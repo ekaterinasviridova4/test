@@ -28,9 +28,9 @@ OAR_OUT=$(oarsub \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      echo 'Starting zero-shot...'; \
-     python3 mistral_zero_premise_claim.py \
-        --data_path pos_neg_premise_claim.conll \
-        --output_dir results_zero_premise_claim; \
+     python3 mistral_zero_binary.py \
+        --data_path pos_neg_imp_exp.conll \
+        --output_dir results_zero_binary; \
     " \
 )
     #--stdout=logs/%jobid%.stdout \
