@@ -30,8 +30,7 @@ OAR_OUT=$(oarsub \
      echo 'Starting zero-shot...'; \
      python3 mistral_zero_premise_claim.py \
         --data_path pos_neg_premise_claim.conll \
-        --output_dir results_zero_premise_claim \
-     echo 'Zero-shot completed...'; \
+        --output_dir results_zero_premise_claim; \
     " \
 )
     #--stdout=logs/%jobid%.stdout \
