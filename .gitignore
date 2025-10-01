@@ -10,4 +10,4 @@ results_finetune_binary/predictions/diagnostics.csv
 results_finetune_binary/predictions/summary.txt
 results_finetune_binary/evaluation/
 results_finetune_premise_claim/evaluation/
-settings_mistral_finetune.py
+settings_mistral_finetune.txt
