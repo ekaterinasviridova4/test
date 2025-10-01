@@ -27,10 +27,18 @@ OAR_OUT=$(oarsub \
     "export HUGGINGFACE_HUB_TOKEN=$HUGGINGFACE_HUB_TOKEN; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     echo 'Starting zero-shot...'; \
-     python3 mistral_zero_binary.py \
-        --data_path pos_neg_imp_exp.conll \
-        --output_dir results_zero_binary; \
+     echo 'Starting fine-grained fine-tuning...'; \
+     python3 mistral_finetune_finegrained.py \
+        --data_dir out_fine_grained_jsonl \
+        --output_dir results_finetune_finegrained \
+        --pred_dir results_finetune_finegrained/predictions; \
+     echo 'Fine-tuning completed. Starting evaluation...'; \
+     python3 evaluate_mistral_finetuned_finegrained.py \
+        --data_dir out_fine_grained_jsonl \
+        --output_dir results_finetune_finegrained \
+        --pred_dir results_finetune_finegrained/predictions \
+        --split test; \
+     echo 'Fine-grained evaluation completed.'; \
     " \
 )
     #--stdout=logs/%jobid%.stdout \
