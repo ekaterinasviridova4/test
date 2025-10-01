@@ -1,4 +1,4 @@
-NAME="finetune_and_evaluate_finegrained"
+NAME="mistral_zero_binary"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -10,10 +10,10 @@ export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 mkdir -p "$LOGDIR"
 
 
-W_HOURS=10                 # Walltime in hours (increased for fine-tuning and evaluation)
-L_NGPUS=2                  # Number of GPUs (increased for larger model)
+W_HOURS=3                 # Walltime in hours (increased for fine-tuning and evaluation)
+L_NGPUS=1                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
-P_MINGPUMEMORY=40000       # Minimum GPU memory in MB (40 GB for larger model)
+P_MINGPUMEMORY=20000       # Minimum GPU memory in MB (40 GB for larger model)
 
 # Submit the job
 OAR_OUT=$(oarsub \
@@ -27,18 +27,11 @@ OAR_OUT=$(oarsub \
     "export HUGGINGFACE_HUB_TOKEN=$HUGGINGFACE_HUB_TOKEN; \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
-     echo 'Starting fine-grained fine-tuning...'; \
-     python3 mistral_finetune_finegrained.py \
-        --data_dir out_fine_grained_jsonl \
-        --output_dir results_finetune_finegrained \
-        --pred_dir results_finetune_finegrained/predictions; \
-     echo 'Fine-tuning completed. Starting evaluation...'; \
-     python3 evaluate_mistral_finetuned_finegrained.py \
-        --data_dir out_fine_grained_jsonl \
-        --output_dir results_finetune_finegrained \
-        --pred_dir results_finetune_finegrained/predictions \
-        --split test; \
-     echo 'Fine-grained evaluation completed.'; \
+     echo 'Starting zero-shot...'; \
+     python3 mistral_zero_binary.py \
+        --data_path pos_neg_imp_exp.conll \
+        --output_dir results_zero_binary \
+     echo 'Zero-shot completed...'; \
     " \
 )
     #--stdout=logs/%jobid%.stdout \
