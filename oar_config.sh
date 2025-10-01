@@ -1,4 +1,4 @@
-NAME="mistral_zero_binary"
+NAME="mistral_finegrained"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -10,10 +10,10 @@ export HUGGINGFACE_HUB_TOKEN=$(cat /home/esvirido/.huggingface/token)
 mkdir -p "$LOGDIR"
 
 
-W_HOURS=3                 # Walltime in hours (increased for fine-tuning and evaluation)
-L_NGPUS=1                  # Number of GPUs (increased for larger model)
+W_HOURS=10                 # Walltime in hours (increased for fine-tuning and evaluation)
+L_NGPUS=2                  # Number of GPUs (increased for larger model)
 P_MINCUDACAPABILITY=7      # Minimum compute capability (e.g., 7 for A100s or 1080Tis)
-P_MINGPUMEMORY=20000       # Minimum GPU memory in MB (40 GB for larger model)
+P_MINGPUMEMORY=40000       # Minimum GPU memory in MB (40 GB for larger model)
 
 # Submit the job
 OAR_OUT=$(oarsub \
