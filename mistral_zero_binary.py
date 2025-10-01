@@ -51,7 +51,7 @@ def parse_args():
                        default='pos_neg_imp_exp.conll',
                        help='Path to the input CONLL file')
     parser.add_argument('--output_dir', type=str,
-                       default='results',
+                       default='results_zero_binary',
                        help='Directory to save the results')
     # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
     #                     default=None,
