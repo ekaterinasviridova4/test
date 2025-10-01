@@ -1,4 +1,4 @@
-NAME="microtext_mistral_zero_binary"
+NAME="microtext_mistral_zero_premise_claim"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -28,9 +28,9 @@ OAR_OUT=$(oarsub \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      echo 'Starting zero-shot classification...'; \
-     python3 microtext_mistral_zero_binary.py \
-        --data_path microtext_binary_implicit_explicit.conll \
-        --output_dir results_microtext_zero_binary; \
+     python3 microtext_mistral_zero_premise_claim.py \
+        --data_path microtext_claim_premise_cleaned.conll \
+        --output_dir results_microtext_zero_premise_claim; \
     " \
 )
     #--stdout=logs/%jobid%.stdout \
