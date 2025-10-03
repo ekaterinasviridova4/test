@@ -26,7 +26,7 @@ nltk.download("punkt_tab")
 
 # Configure logging
 logging.basicConfig(
-    filename="mistral_finetune_finegrained.log",
+    filename="mistral_microtext_finetune_finegrained.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
