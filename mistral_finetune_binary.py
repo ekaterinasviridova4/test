@@ -26,7 +26,7 @@ nltk.download("punkt_tab")
 
 # Configure logging
 logging.basicConfig(
-    filename="mistral_finetune_binary.log",
+    filename="mistral_microtext_finetune_binary.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -137,13 +137,13 @@ def setup_model_with_lora():
 def parse_args():
     parser = argparse.ArgumentParser(description='fine-tune binary classification using Mistral')
     parser.add_argument('--data_dir', type=str, 
-                       default='out_jsonl',
+                       default='out_combined_binary_jsonl',
                        help='Directory with train.jsonl, dev.jsonl, test.jsonl')
     parser.add_argument('--output_dir', type=str,
-                       default='results_finetune_binary',
+                       default='results_combined_finetune_binary',
                        help='Directory to save model and logs')
-    parser.add_argument("--pred_dir", type=str, 
-                        default="results_finetune_binary",
+    parser.add_argument("--pred_dir", type=str,
+                        default="results_combined_finetune_binary/predictions",
                         help="Directory to save predictions and reports")
     # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
     #                     default=20,

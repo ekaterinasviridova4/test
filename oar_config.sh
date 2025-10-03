@@ -1,4 +1,4 @@
-NAME="mistral__combined_premise_claim_finetune"
+NAME="mistral__combined_binary_finetune"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -28,13 +28,13 @@ OAR_OUT=$(oarsub \
      module load conda; \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      echo 'Starting Mistral classification...'; \
-     python3 mistral_finetune_premise_claim.py \
-        --data_dir out_combined_premise_claim_jsonl \
-        --output_dir results_combined_finetune_premise_claim; \
-    python3 evaluate_mistral_finetuned_premise_claim.py \
-        --data_dir out_combined_premise_claim_jsonl \
-        --output_dir results_combined_finetune_premise_claim \
-        --pred_dir results_combined_finetune_premise_claim/predictions \
+     python3 mistral_finetune_binary.py \
+        --data_dir out_combined_binary_jsonl \
+        --output_dir results_combined_finetune_binary; \
+    python3 evaluate_mistral_finetuned_binary.py \
+        --data_dir out_combined_binary_jsonl \
+        --output_dir results_combined_finetune_binary \
+        --pred_dir results_combined_finetune_binary/predictions \
         --split test; \
      echo 'Mistral classification completed.'
     " \
