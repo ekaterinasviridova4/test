@@ -26,7 +26,7 @@ nltk.download("punkt_tab")
 
 # Configure logging
 logging.basicConfig(
-    filename="mistral_finetune_premise_claim.log",
+    filename="mistral_microtext_finetune_premise_claim.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -61,13 +61,13 @@ def load_jsonl_dataset(path):
     return Dataset.from_list(rows)
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to classify each sentence in the following text as premise or claim.
+     prompt = f"""Your task is to classify each sentence in the following text as Premise or Claim.
 Definitions:
-- claim is a concluding statement.
-- premise represents an evidence, a fact, that may support or attack a claim.
+- Claim is a concluding statement.
+- Premise represents an evidence, a fact, that may support or attack a claim.
 
 Instructions:
-- Wrap each sentence in either <premise> sentence </premise> or <claim> sentence </claim> tags based on the classification.
+- Wrap each sentence in either <Premise> sentence </Premise> or <Claim> sentence </Claim> tags based on the classification.
 - Output only the tagged text, with no explanations or extra formatting.
 
 Sentence:
@@ -137,13 +137,13 @@ def setup_model_with_lora():
 def parse_args():
     parser = argparse.ArgumentParser(description='fine-tune premise claim classification using Mistral')
     parser.add_argument('--data_dir', type=str, 
-                       default='out_premise_claim_jsonl',
+                       default='out_combined_premise_claim_jsonl',
                        help='Directory with train.jsonl, dev.jsonl, test.jsonl')
     parser.add_argument('--output_dir', type=str,
-                       default='results_finetune_premise_claim',
+                       default='results_combined_finetune_premise_claim',
                        help='Directory to save model and logs')
     parser.add_argument("--pred_dir", type=str, 
-                        default="results_finetune_premise_claim",
+                        default="results_combined_finetune_premise_claim",
                         help="Directory to save predictions and reports")
     # parser.add_argument('--limit', type=int, #to limit the number of examples for testing
     #                     default=20,

@@ -28,13 +28,13 @@ def load_jsonl_dataset(path):
     return Dataset.from_list(rows)
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to classify each sentence in the following text as premise or claim.
+     prompt = f"""Your task is to classify each sentence in the following text as Premise or Claim.
 Definitions:
-- claim is a concluding statement.
-- premise represents an evidence, a fact, that may support or attack a claim.
+- Claim is a concluding statement.
+- Premise represents an evidence, a fact, that may support or attack a claim.
 
 Instructions:
-- Wrap each sentence in either <premise> sentence </premise> or <claim> sentence </claim> tags based on the classification.
+- Wrap each sentence in either <Premise> sentence </Premise> or <Claim> sentence </Claim> tags based on the classification.
 - Output only the tagged text, with no explanations or extra formatting.
 
 Sentence:
@@ -115,8 +115,8 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     preds, refs = load_predictions_and_gold(out_path)
 
     def count_valid_spans(data):
-        claim_pattern = re.compile(r"<claim>.*?</claim>")
-        premise_pattern = re.compile(r"<premise>.*?</premise>")
+        claim_pattern = re.compile(r"<Claim>.*?</Claim>")
+        premise_pattern = re.compile(r"<Premise>.*?</Premise>")
         claim_count = sum(len(claim_pattern.findall(d)) for d in data)
         premise_count = sum(len(premise_pattern.findall(d)) for d in data)
         return claim_count, premise_count
@@ -137,13 +137,13 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
     # Extract spans 
     def extract_spans(data):
         spans = []
-        claim_pattern = re.compile(r"<claim>\s*(.*?)\s*</claim>", re.DOTALL)
-        premise_pattern = re.compile(r"<premise>\s*(.*?)\s*</premise>", re.DOTALL)
+        claim_pattern = re.compile(r"<Claim>\s*(.*?)\s*</Claim>", re.DOTALL)
+        premise_pattern = re.compile(r"<Premise>\s*(.*?)\s*</Premise>", re.DOTALL)
         for text in data:
             claim_matches = claim_pattern.findall(text)
             premise_matches = premise_pattern.findall(text)
-            spans.extend([("claim", span.strip().split()) for span in claim_matches])
-            spans.extend([("premise", span.strip().split()) for span in premise_matches])
+            spans.extend([("Claim", span.strip().split()) for span in claim_matches])
+            spans.extend([("Premise", span.strip().split()) for span in premise_matches])
         return spans
 
     # Matching and evaluation 
@@ -188,13 +188,13 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on claim/premise tagging")
     parser.add_argument('--data_dir', type=str,
-                        default='out_premise_claim_jsonl',
+                        default='out_combined_premise_claim_jsonl',
                         help='Directory with train.jsonl, dev.jsonl, test.jsonl')
     parser.add_argument('--output_dir', type=str,
-                        default='results_finetune_premise_claim',
+                        default='results_combined_finetune_premise_claim',
                         help='Directory with the fine-tuned model and logs')
     parser.add_argument('--pred_dir', type=str,
-                        default='results_finetune_premise_claim',
+                        default='results_combined_finetune_premise_claim',
                         help='Directory to save predictions and reports')
     parser.add_argument('--split', type=str,
                         default='test',
