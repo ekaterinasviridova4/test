@@ -205,13 +205,13 @@ def evaluate(model_dir, data_dir, split, pred_dir, max_length=2048, max_new_toke
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate fine-tuned Mistral on fine-grained tagging (Implicature, Ambiguity, Presupposition, Explicit)")
     parser.add_argument('--data_dir', type=str,
-                        default='out_fine_grained_jsonl',
+                        default='out_combined_finegrained_jsonl',
                         help='Directory with train.jsonl, dev.jsonl, test.jsonl')
     parser.add_argument('--output_dir', type=str,
-                        default='results_finetune_finegrained',
+                        default='results_combined_finetune_finegrained',
                         help='Directory with the fine-tuned model and logs')
     parser.add_argument('--pred_dir', type=str,
-                        default='results_finetune_finegrained',
+                        default='results_combined_finetune_finegrained',
                         help='Directory to save predictions and reports')
     parser.add_argument('--split', type=str,
                         default='test',
