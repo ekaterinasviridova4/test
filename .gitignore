@@ -11,6 +11,8 @@ results_finetune_binary/predictions/summary.txt
 results_finetune_binary/evaluation/
 results_finetune_premise_claim/evaluation/
 results_finetune_finegrained/evaluation/
+results_combined_finetune_binary/evaluation/
+results_combined_finetune_premise_claim/evaluation/
 settings_mistral_finetune.txt
 combined_data/
 standalone2.py
