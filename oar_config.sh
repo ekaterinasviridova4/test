@@ -34,7 +34,7 @@ OAR_OUT=$(oarsub \
     python3 evaluate_mistral_finetuned_finegrained.py \
         --data_dir out_combined_finegrained_jsonl \
         --output_dir results_combined_finetune_finegrained \
-        --pred_dir results_combined_finetune_binary/predictions \
+        --pred_dir results_combined_finetune_finegrained/predictions \
         --split test; \
      echo 'Mistral classification completed.'
     " \
