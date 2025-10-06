@@ -63,13 +63,13 @@ def load_jsonl_dataset(path):
     return Dataset.from_list(rows)
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to classify each sentence in the following text as Premise or Claim.
+     prompt = f"""Your task is to classify each sentence in the following text as premise or claim.
 Definitions:
-- Claim is a concluding statement.
-- Premise represents an evidence, a fact, that may support or attack a claim.
+- claim is a concluding statement.
+- premise represents an evidence, a fact, that may support or attack a claim.
 
 Instructions:
-- Wrap each sentence in either <Premise> sentence </Premise> or <Claim> sentence </Claim> tags based on the classification.
+- Wrap each sentence in either <premise> sentence </premise> or <claim> sentence </claim> tags based on the classification.
 - Output only the tagged text, with no explanations or extra formatting.
 
 Sentence:

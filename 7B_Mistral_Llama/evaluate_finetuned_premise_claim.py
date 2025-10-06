@@ -26,13 +26,13 @@ def load_jsonl_dataset(path):
     return Dataset.from_list(rows)
 
 def build_prompt(sentence):
-     prompt = f"""Your task is to classify each sentence in the following text as Premise or Claim.
+     prompt = f"""Your task is to classify each sentence in the following text as premise or claim.
 Definitions:
-- Claim is a concluding statement.
-- Premise represents an evidence, a fact, that may support or attack a claim.
+- claim is a concluding statement.
+- premise represents an evidence, a fact, that may support or attack a claim.
 
 Instructions:
-- Wrap each sentence in either <Premise> sentence </Premise> or <Claim> sentence </Claim> tags based on the classification.
+- Wrap each sentence in either <premise> sentence </premise> or <claim> sentence </claim> tags based on the classification.
 - Output only the tagged text, with no explanations or extra formatting.
 
 Sentence:
@@ -142,8 +142,9 @@ def evaluate(model_dir, data_dir, split, pred_dir, model_name, max_length=2048, 
     preds, refs = load_predictions_and_gold(out_path)
 
     def count_valid_spans(data):
-        claim_pattern = re.compile(r"<Claim>.*?</Claim>")
-        premise_pattern = re.compile(r"<Premise>.*?</Premise>")
+        # Case-insensitive patterns for claim and premise tags
+        claim_pattern = re.compile(r"<claim>.*?</claim>", re.IGNORECASE)
+        premise_pattern = re.compile(r"<premise>.*?</premise>", re.IGNORECASE)
         claim_count = sum(len(claim_pattern.findall(d)) for d in data)
         premise_count = sum(len(premise_pattern.findall(d)) for d in data)
         return claim_count, premise_count
@@ -164,13 +165,15 @@ def evaluate(model_dir, data_dir, split, pred_dir, model_name, max_length=2048, 
     # Extract spans 
     def extract_spans(data):
         spans = []
-        claim_pattern = re.compile(r"<Claim>\s*(.*?)\s*</Claim>", re.DOTALL)
-        premise_pattern = re.compile(r"<Premise>\s*(.*?)\s*</Premise>", re.DOTALL)
+        # Case-insensitive patterns with DOTALL flag for multiline matching
+        claim_pattern = re.compile(r"<claim>\s*(.*?)\s*</claim>", re.DOTALL | re.IGNORECASE)
+        premise_pattern = re.compile(r"<premise>\s*(.*?)\s*</premise>", re.DOTALL | re.IGNORECASE)
         for text in data:
             claim_matches = claim_pattern.findall(text)
             premise_matches = premise_pattern.findall(text)
-            spans.extend([("Claim", span.strip().split()) for span in claim_matches])
-            spans.extend([("Premise", span.strip().split()) for span in premise_matches])
+            # Normalize labels to lowercase for consistent evaluation
+            spans.extend([("claim", span.strip().split()) for span in claim_matches])
+            spans.extend([("premise", span.strip().split()) for span in premise_matches])
         return spans
 
     # Matching and evaluation 
@@ -187,19 +190,20 @@ def evaluate(model_dir, data_dir, split, pred_dir, model_name, max_length=2048, 
                 if i in matched_preds:
                     continue
                 overlap = token_overlap(ref_tokens, pred_tokens)
-                if overlap >= threshold and ref_label == pred_label:
-                    y_true.append(ref_label)
-                    y_pred.append(pred_label)
+                # Case-insensitive label matching
+                if overlap >= threshold and ref_label.lower() == pred_label.lower():
+                    y_true.append(ref_label.lower())  # Normalize to lowercase
+                    y_pred.append(pred_label.lower())  # Normalize to lowercase
                     matched_preds.add(i)
                     matched = True
                     break
             if not matched:
-                y_true.append(ref_label)
+                y_true.append(ref_label.lower())  # Normalize to lowercase
                 y_pred.append("O")
         for i, (pred_label, _) in enumerate(pred_spans):
             if i not in matched_preds:
                 y_true.append("O")
-                y_pred.append(pred_label)
+                y_pred.append(pred_label.lower())  # Normalize to lowercase
         return y_true, y_pred
 
     pred_spans = extract_spans(preds)
