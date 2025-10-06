@@ -1,0 +1,4 @@
+Valid claim spans in predictions: 58
+Valid premise spans in predictions: 119
+Valid claim spans in references: 115
+Valid premise spans in references: 101
