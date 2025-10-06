@@ -1,0 +1,9 @@
+              precision    recall  f1-score   support
+
+       Claim      0.000     0.000     0.000       0.0
+           O      0.000     0.000     0.000      10.0
+     Premise      0.000     0.000     0.000       0.0
+
+    accuracy                          0.000      10.0
+   macro avg      0.000     0.000     0.000      10.0
+weighted avg      0.000     0.000     0.000      10.0
