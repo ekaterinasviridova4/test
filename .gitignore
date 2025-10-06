@@ -17,3 +17,4 @@ results_combined_finetune_finegrained/evaluation/
 settings_mistral_finetune.txt
 combined_data/
 standalone2.py
+oar_config.sh
