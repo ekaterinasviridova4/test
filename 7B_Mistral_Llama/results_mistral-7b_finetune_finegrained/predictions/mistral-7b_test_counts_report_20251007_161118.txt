@@ -1,0 +1,8 @@
+Valid implicature spans in predictions: 10
+Valid ambiguity spans in predictions: 1
+Valid presupposition spans in predictions: 2
+Valid explicit spans in predictions: 175
+Valid implicature spans in references: 54
+Valid ambiguity spans in references: 24
+Valid presupposition spans in references: 29
+Valid explicit spans in references: 137
