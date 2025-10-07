@@ -17,7 +17,6 @@ results_combined_finetune_finegrained/evaluation/
 settings_mistral_finetune.txt
 combined_data/
 standalone2.py
-oar_config.sh
 7B_Mistral_Llama/results_mistral-7b_finetune_premise_claim/evaluation/
 7B_Mistral_Llama/results_llama-8b_finetune_premise_claim/evaluation/
 7B_Mistral_Llama/results_mistral-7b_finetune_premise_claim/checkpoint-24
