@@ -1,4 +1,4 @@
-NAME="mistral_7b_finegrained_binary_micro"
+NAME="mistral_7b_micro_finegrained_binary"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
