@@ -1,4 +1,4 @@
-NAME="llama_8b_finegrained_finetune"
+NAME="llama_8b_finegrained_premise_claim_micro"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -11,8 +11,8 @@ mkdir -p "$LOGDIR"
 
 # LLaMA 8B specific directories
 MODEL_NAME="llama-8b"
-OUTPUT_DIR="7B_Mistral_Llama/results_llama-8b_finetune_finegrained"
-DATA_DIR="out_fine_grained_jsonl"
+OUTPUT_DIR="7B_Mistral_Llama/results_micro_llama-8b_finetune_premise_claim"
+DATA_DIR="out_combined_premise_claim_jsonl"
 
 W_HOURS=10                 # Walltime in hours
 L_NGPUS=1                  # Number of GPUs (1 is sufficient with LoRA + quantization)
@@ -33,13 +33,13 @@ OAR_OUT=$(oarsub \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      
      echo 'Starting LLaMA 8B fine-tuning...'; \
-     python3 7B_Mistral_Llama/finetune_finegrained.py \
+     python3 7B_Mistral_Llama/finetune_premise_claim.py \
         --model_name $MODEL_NAME \
         --data_dir $DATA_DIR \
         --output_dir $OUTPUT_DIR; \
      
      echo 'Starting LLaMA 8B evaluation...'; \
-     python3 7B_Mistral_Llama/evaluate_finetuned_finegrained.py \
+     python3 7B_Mistral_Llama/evaluate_finetuned_premise_claim.py \
         --model_name $MODEL_NAME \
         --data_dir $DATA_DIR \
         --output_dir $OUTPUT_DIR \
