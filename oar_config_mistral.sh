@@ -1,4 +1,4 @@
-NAME="mistral_7b_finegrained_premise_claim_micro"
+NAME="mistral_7b_finegrained_binary_micro"
 PROJECT_NAME="test"
 HOME="/home/esvirido"
 PROJECT_DIR="$HOME/phd/test"
@@ -11,8 +11,8 @@ mkdir -p "$LOGDIR"
 
 # Mistral 7B specific directories
 MODEL_NAME="mistral-7b"
-OUTPUT_DIR="7B_Mistral_Llama/results_micro_mistral-7b_finetune_premise_claim"
-DATA_DIR="out_combined_premise_claim_jsonl"
+OUTPUT_DIR="7B_Mistral_Llama/results_micro_mistral-7b_finetune_binary"
+DATA_DIR="out_combined_binary_jsonl"
 
 W_HOURS=10                 # Walltime in hours
 L_NGPUS=1                  # Number of GPUs (1 is sufficient with LoRA + quantization)
@@ -33,13 +33,13 @@ OAR_OUT=$(oarsub \
      source /home/esvirido/miniconda3/bin/activate /home/esvirido/miniconda3/envs/llm-env; \
      
      echo 'Starting Mistral 7B fine-tuning...'; \
-     python3 7B_Mistral_Llama/finetune_premise_claim.py \
+     python3 7B_Mistral_Llama/finetune_binary.py \
         --model_name $MODEL_NAME \
         --data_dir $DATA_DIR \
         --output_dir $OUTPUT_DIR; \
      
      echo 'Starting Mistral 7B evaluation...'; \
-     python3 7B_Mistral_Llama/evaluate_finetuned_premise_claim.py \
+     python3 7B_Mistral_Llama/evaluate_finetuned_binary.py \
         --model_name $MODEL_NAME \
         --data_dir $DATA_DIR \
         --output_dir $OUTPUT_DIR \
