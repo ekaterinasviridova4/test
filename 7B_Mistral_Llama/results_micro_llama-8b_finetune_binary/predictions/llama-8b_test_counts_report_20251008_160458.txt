@@ -1,0 +1,4 @@
+Valid implicit spans in predictions: 36
+Valid explicit spans in predictions: 254
+Valid implicit spans in references: 118
+Valid explicit spans in references: 193
