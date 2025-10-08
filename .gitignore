@@ -37,3 +37,7 @@ standalone2.py
 7B_Mistral_Llama/results_llama-8b_finetune_finegrained/checkpoint-24
 7B_Mistral_Llama/results_llama-8b_finetune_finegrained/checkpoint-16
 7B_Mistral_Llama/results_llama-8b_finetune_finegrained/tokenizer.json
+7B_Mistral_Llama/results_llama-8b_finetune_binary/evaluation/
+7B_Mistral_Llama/results_llama-8b_finetune_finegrained/evaluation/
+7B_Mistral_Llama/results_mistral-7b_finetune_binary/evaluation/
+7B_Mistral_Llama/results_mistral-7b_finetune_finegrained/evaluation/
