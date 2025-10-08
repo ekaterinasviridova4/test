@@ -47,3 +47,10 @@ standalone2.py
 7B_Mistral_Llama/results_micro_llama-8b_finetune_premise_claim/checkpoint-38
 7B_Mistral_Llama/results_micro_llama-8b_finetune_premise_claim/checkpoint-57
 7B_Mistral_Llama/results_micro_llama-8b_finetune_premise_claim/tokenizer.json
+#
+7B_Mistral_Llama/results_micro_llama-8b_finetune_binary/checkpoint-38
+7B_Mistral_Llama/results_micro_llama-8b_finetune_binary/checkpoint-57
+7B_Mistral_Llama/results_micro_llama-8b_finetune_binary/tokenizer.json
+7B_Mistral_Llama/results_micro_mistral-7b_finetune_binary/checkpoint-38
+7B_Mistral_Llama/results_micro_mistral-7b_finetune_binary/checkpoint-57
+7B_Mistral_Llama/results_micro_mistral-7b_finetune_binary/tokenizer.json
