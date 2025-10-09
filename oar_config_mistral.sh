@@ -12,7 +12,7 @@ mkdir -p "$LOGDIR"
 # Mistral 7B specific directories
 MODEL_NAME="mistral-7b"
 OUTPUT_DIR="7B_Mistral_Llama/results_micro_mistral-7b_finetune_finegrained"
-DATA_DIR="out_combined_fine_grained_jsonl"
+DATA_DIR="out_combined_finegrained_jsonl"
 
 W_HOURS=10                 # Walltime in hours
 L_NGPUS=1                  # Number of GPUs (1 is sufficient with LoRA + quantization)
