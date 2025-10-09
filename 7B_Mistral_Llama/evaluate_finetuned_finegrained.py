@@ -240,7 +240,7 @@ def parse_args():
                        default='mistral-7b',
                        help='Model that was fine-tuned: mistral-7b or llama-8b')
     parser.add_argument('--data_dir', type=str,
-                        default='out_fine_grained_jsonl',
+                        default='out_combined_fine_grained_jsonl',
                         help='Directory with train.jsonl, dev.jsonl, test.jsonl')
     parser.add_argument('--output_dir', type=str,
                         default=None,
